@@ -4,7 +4,7 @@
 Name: edk2
 Summary: EFI Development Kit II
 Version: %{edk2_date}git%{edk2_githash}
-Release: 1.4.5%{?dist}
+Release: 1.4.6%{?dist}
 
 License: BSD and MIT
 URL: https://github.com/tianocore/edk2
@@ -16,19 +16,20 @@ Patch1: 0002-OvmfPkg-XenSupport-use-a-correct-PCI-host-bridge-ape.patch
 Patch2: 0003-OvmfPkg-XenSupport-turn-off-address-decoding-before-.patch
 Patch3: 0001-OvmfPkg-End-timer-interrupt-later-to-avoid-stack-ove.patch
 Patch4: 0001-OvmfPkg-XenPlatformPei-Use-CPUID-to-get-physical-add.patch
-Patch5: openssl.patch
-Patch6: nvidia-vgpu-support.patch
-Patch7: gvt-g-support.patch
-Patch8: set-default-resolution-1024-768.patch
-Patch9: embed-nic-drivers.patch
-Patch10: add-xen-variable.patch
-Patch11: add-xen-platform-device-id.patch
-Patch12: disable-modules.patch
-Patch13: xenorder.patch
-Patch14: keep-caching-enabled.patch
-Patch15: remove-unused-crypto.patch
+Patch5: ovmfpkg-xenpvblkdxe__fix_memory_barrier_macro.patch
+Patch6: openssl.patch
+Patch7: nvidia-vgpu-support.patch
+Patch8: gvt-g-support.patch
+Patch9: set-default-resolution-1024-768.patch
+Patch10: embed-nic-drivers.patch
+Patch11: add-xen-variable.patch
+Patch12: add-xen-platform-device-id.patch
+Patch13: disable-modules.patch
+Patch14: xenorder.patch
+Patch15: keep-caching-enabled.patch
+Patch16: remove-unused-crypto.patch
 
-Provides: gitsha(https://code.citrite.net/rest/archive/latest/projects/XS/repos/edk2.pg/archive?at=1.4.5&format=tar#/edk2.pg.tar) = 0d14222c5c953c330843dff9849df87037b269bb
+Provides: gitsha(https://code.citrite.net/rest/archive/latest/projects/XS/repos/edk2.pg/archive?at=1.4.6&format=tar#/edk2.pg.tar) = 5a2032f6ea029985389efa519bbfc8f7288f714e
 
 
 BuildRequires: gcc gcc-c++
@@ -96,6 +97,9 @@ cp OvmfPkg/License.txt License.ovmf
 
 
 %changelog
+* Fri Oct 7 2022 Andrew Cooper <andrew.cooper3@citrix.com> - 20180522git4b8552d-1.4.6
+- Correct the usage of memory barriers to fix an occasional hang
+
 * Fri Jan 22 2021 Jennifer Herbert <jennifer.herbert@citrix.com> - 20180522git4b8552d-1.4.5
 - CA-350259: Fix PCI passthrough of devices with 64+ GB BARs
 
