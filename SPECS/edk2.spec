@@ -73,7 +73,7 @@ Patch39: MdePkg-SecPeiDxeTimerLibCpu-Support-for-dynamic-PcdF.patch
 Patch40: OvmfPkg-OvmfXen-Use-RuntimeTimerLibCpu-for-DXE_DRIVER.patch
 Patch41: add-option-to-disable-bgrt.patch
 Patch42: use-rtc.patch
-Patch43: move-xenconnect-later.patch
+# Patch43: move-xenconnect-later.patch
 Patch44: xen-rng-dxe.patch
 Patch45: nvidia-vgpu-support.patch
 Patch46: gvt-g-support.patch
@@ -96,6 +96,7 @@ Patch61: remove-vlan-tag-from-a-packet.patch
 # XCP-ng patches
 Patch1001: UefiCpuPkg-CpuMpPei-Workaround-page-table-allocation.patch
 Patch1002: 0001-OvmfPkg-XenPlatformPei-Allocate-more-memory-when-PEI.patch
+Patch1003: OvmfPkg-XenHypercallLib-use-direct-hypercalls.patch
 
 %if 0%{?xenserver} < 9
 BuildRequires: devtoolset-11-binutils

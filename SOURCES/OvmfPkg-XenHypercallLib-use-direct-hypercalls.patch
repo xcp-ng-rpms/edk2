@@ -1,0 +1,313 @@
+From 0e6f6c715c59a6a44f86e523460526b3217c8b62 Mon Sep 17 00:00:00 2001
+From: Jason Andryuk <jason.andryuk@amd.com>
+Date: Thu, 11 Apr 2024 15:43:56 -0400
+Subject: [PATCH] OvmfPkg/XenHypercallLib: Use direct hypercalls
+
+This removes the need to allocate memory for the hypercall page,
+particularly for use during runtime.  This also makes the library usable
+in all phases, so LIBRARY_CLASS can remove the restrictions.
+
+The processor vendor is used to select vmmcall or vmcall instructions.
+The listed vendors are those in the Xen tree.
+
+Signed-off-by: Jason Andryuk <jason.andryuk@amd.com>
+---
+ .../XenHypercallLib/Ia32/hypercall.nasm       |  37 ++++--
+ .../XenHypercallLib/X64/hypercall.nasm        |  37 ++++--
+ .../Library/XenHypercallLib/X86XenHypercall.c | 112 ++++++++++++++----
+ .../XenHypercallLib/XenHypercallLib.inf       |   6 +-
+ 4 files changed, 148 insertions(+), 44 deletions(-)
+
+diff --git a/OvmfPkg/Library/XenHypercallLib/Ia32/hypercall.nasm b/OvmfPkg/Library/XenHypercallLib/Ia32/hypercall.nasm
+index e0fa71bb5ba8..abcfcb55ce30 100644
+--- a/OvmfPkg/Library/XenHypercallLib/Ia32/hypercall.nasm
++++ b/OvmfPkg/Library/XenHypercallLib/Ia32/hypercall.nasm
+@@ -2,24 +2,47 @@ SECTION .text
+ 
+ ; INTN
+ ; EFIAPI
+-; __XenHypercall2 (
+-;   IN     VOID *HypercallAddr,
++; __XenVmmcall2 (
++;   IN     INTN HypercallNum,
+ ;   IN OUT INTN Arg1,
+ ;   IN OUT INTN Arg2
+ ;   );
+-global ASM_PFX(__XenHypercall2)
+-ASM_PFX(__XenHypercall2):
++global ASM_PFX(__XenVmmcall2)
++ASM_PFX(__XenVmmcall2):
+   ; Save only ebx, ecx is supposed to be a scratch register and needs to be
+   ; saved by the caller
+   push ebx
+-  ; Copy HypercallAddr to eax
++  ; Copy HypercallNum to eax
+   mov eax, [esp + 8]
+   ; Copy Arg1 to the register expected by Xen
+   mov ebx, [esp + 12]
+   ; Copy Arg2 to the register expected by Xen
+   mov ecx, [esp + 16]
+-  ; Call HypercallAddr
+-  call eax
++  ; Call Hypercall
++  vmmcall
++  pop ebx
++  ret
++
++; INTN
++; EFIAPI
++; __XenVmcall2 (
++;   IN     INTN HypercallNum,
++;   IN OUT INTN Arg1,
++;   IN OUT INTN Arg2
++;   );
++global ASM_PFX(__XenVmcall2)
++ASM_PFX(__XenVmcall2):
++  ; Save only ebx, ecx is supposed to be a scratch register and needs to be
++  ; saved by the caller
++  push ebx
++  ; Copy HypercallNum to eax
++  mov eax, [esp + 8]
++  ; Copy Arg1 to the register expected by Xen
++  mov ebx, [esp + 12]
++  ; Copy Arg2 to the register expected by Xen
++  mov ecx, [esp + 16]
++  ; Call Hypercall
++  vmcall
+   pop ebx
+   ret
+ 
+diff --git a/OvmfPkg/Library/XenHypercallLib/X64/hypercall.nasm b/OvmfPkg/Library/XenHypercallLib/X64/hypercall.nasm
+index 5e6a0c05c5c4..469ac212f1dd 100644
+--- a/OvmfPkg/Library/XenHypercallLib/X64/hypercall.nasm
++++ b/OvmfPkg/Library/XenHypercallLib/X64/hypercall.nasm
+@@ -3,23 +3,46 @@ SECTION .text
+ 
+ ; INTN
+ ; EFIAPI
+-; __XenHypercall2 (
+-;   IN     VOID *HypercallAddr,
++; __XenVmmcall2 (
++;   IN     INTN HypercallNum,
+ ;   IN OUT INTN Arg1,
+ ;   IN OUT INTN Arg2
+ ;   );
+-global ASM_PFX(__XenHypercall2)
+-ASM_PFX(__XenHypercall2):
++global ASM_PFX(__XenVmmcall2)
++ASM_PFX(__XenVmmcall2):
+   push rdi
+   push rsi
+-  ; Copy HypercallAddr to rax
++  ; Copy HypercallNum to rax
+   mov rax, rcx
+   ; Copy Arg1 to the register expected by Xen
+   mov rdi, rdx
+   ; Copy Arg2 to the register expected by Xen
+   mov rsi, r8
+-  ; Call HypercallAddr
+-  call rax
++  ; Call HypercallNum
++  vmmcall
++  pop rsi
++  pop rdi
++  ret
++
++; INTN
++; EFIAPI
++; __XenVmcall2 (
++;   IN     INTN HypercallNum,
++;   IN OUT INTN Arg1,
++;   IN OUT INTN Arg2
++;   );
++global ASM_PFX(__XenVmcall2)
++ASM_PFX(__XenVmcall2):
++  push rdi
++  push rsi
++  ; Copy HypercallNum to rax
++  mov rax, rcx
++  ; Copy Arg1 to the register expected by Xen
++  mov rdi, rdx
++  ; Copy Arg2 to the register expected by Xen
++  mov rsi, r8
++  ; Call HypercallNum
++  vmcall
+   pop rsi
+   pop rdi
+   ret
+diff --git a/OvmfPkg/Library/XenHypercallLib/X86XenHypercall.c b/OvmfPkg/Library/XenHypercallLib/X86XenHypercall.c
+index dcc657525028..a07d9e4d4608 100644
+--- a/OvmfPkg/Library/XenHypercallLib/X86XenHypercall.c
++++ b/OvmfPkg/Library/XenHypercallLib/X86XenHypercall.c
+@@ -7,11 +7,31 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
+ **/
+ 
+ #include <PiDxe.h>
+-#include <Library/HobLib.h>
++#include <Library/BaseLib.h>
+ #include <Library/DebugLib.h>
+-#include <Guid/XenInfo.h>
++#include <Library/CpuLib.h>
+ 
+-STATIC VOID  *HyperPage;
++static INTN     mUseVmmCall = -1;
++static BOOLEAN  mHypercallAvail;
++
++//
++// Interface exposed by the ASM implementation of the core hypercall
++//
++INTN
++EFIAPI
++__XenVmmcall2 (
++  IN     INTN  HypercallNum,
++  IN OUT INTN  Arg1,
++  IN OUT INTN  Arg2
++  );
++
++INTN
++EFIAPI
++__XenVmcall2 (
++  IN     INTN  HypercallNum,
++  IN OUT INTN  Arg1,
++  IN OUT INTN  Arg2
++  );
+ 
+ /**
+   Check if the Xen Hypercall library is able to make calls to the Xen
+@@ -29,23 +49,38 @@ XenHypercallIsAvailable (
+   VOID
+   )
+ {
+-  return HyperPage != NULL;
++  return mHypercallAvail;
+ }
+ 
+-//
+-// Interface exposed by the ASM implementation of the core hypercall
+-//
+-INTN
+-EFIAPI
+-__XenHypercall2 (
+-  IN     VOID  *HypercallAddr,
+-  IN OUT INTN  Arg1,
+-  IN OUT INTN  Arg2
+-  );
++STATIC
++UINT32
++XenCpuidLeaf (
++  VOID
++  )
++{
++  UINT8   Signature[13];
++  UINT32  XenLeaf;
++
++  Signature[12] = '\0';
++  for (XenLeaf = 0x40000000; XenLeaf < 0x40010000; XenLeaf += 0x100) {
++    AsmCpuid (
++      XenLeaf,
++      NULL,
++      (UINT32 *)&Signature[0],
++      (UINT32 *)&Signature[4],
++      (UINT32 *)&Signature[8]
++      );
++
++    if (!AsciiStrCmp ((CHAR8 *)Signature, "XenVMMXenVMM")) {
++      return XenLeaf;
++    }
++  }
++
++  return 0;
++}
+ 
+ /**
+-  Library constructor: retrieves the Hyperpage address
+-  from the gEfiXenInfoGuid HOB
++  Library constructor: Check for Xen leaf in CPUID
+ **/
+ RETURN_STATUS
+ EFIAPI
+@@ -53,16 +88,41 @@ XenHypercallLibInit (
+   VOID
+   )
+ {
+-  EFI_HOB_GUID_TYPE  *GuidHob;
+-  EFI_XEN_INFO       *XenInfo;
++  UINT32  XenLeaf;
++  CHAR8   sig[13];
+ 
+-  GuidHob = GetFirstGuidHob (&gEfiXenInfoGuid);
+-  if (GuidHob == NULL) {
++  XenLeaf = XenCpuidLeaf ();
++  if (XenLeaf == 0) {
+     return RETURN_NOT_FOUND;
+   }
+ 
+-  XenInfo   = (EFI_XEN_INFO *)GET_GUID_HOB_DATA (GuidHob);
+-  HyperPage = XenInfo->HyperPages;
++  sig[12] = '\0';
++  AsmCpuid (
++    0,
++    NULL,
++    (UINT32 *)&sig[0],
++    (UINT32 *)&sig[8],
++    (UINT32 *)&sig[4]
++    );
++
++  DEBUG ((DEBUG_INFO, "Detected CPU \"%12a\"\n", sig));
++
++  if ((AsciiStrCmp ("AuthenticAMD", sig) == 0) ||
++      (AsciiStrCmp ("HygonGenuine", sig) == 0))
++  {
++    mUseVmmCall = TRUE;
++  } else if ((AsciiStrCmp ("GenuineIntel", sig) == 0) ||
++             (AsciiStrCmp ("CentaurHauls", sig) == 0) ||
++             (AsciiStrCmp ("  Shanghai  ", sig) == 0))
++  {
++    mUseVmmCall = FALSE;
++  } else {
++    DEBUG ((DEBUG_ERROR, "Unsupported CPU vendor\n"));
++    return RETURN_NOT_FOUND;
++  }
++
++  mHypercallAvail = TRUE;
++
+   return RETURN_SUCCESS;
+ }
+ 
+@@ -84,7 +144,9 @@ XenHypercall2 (
+   IN OUT INTN   Arg2
+   )
+ {
+-  ASSERT (HyperPage != NULL);
+-
+-  return __XenHypercall2 ((UINT8 *)HyperPage + HypercallID * 32, Arg1, Arg2);
++  if (mUseVmmCall) {
++    return __XenVmmcall2 (HypercallID, Arg1, Arg2);
++  } else {
++    return __XenVmcall2 (HypercallID, Arg1, Arg2);
++  }
+ }
+diff --git a/OvmfPkg/Library/XenHypercallLib/XenHypercallLib.inf b/OvmfPkg/Library/XenHypercallLib/XenHypercallLib.inf
+index edb77872391c..2321b61bf8f4 100644
+--- a/OvmfPkg/Library/XenHypercallLib/XenHypercallLib.inf
++++ b/OvmfPkg/Library/XenHypercallLib/XenHypercallLib.inf
+@@ -13,11 +13,6 @@
+   MODULE_TYPE                    = BASE
+   VERSION_STRING                 = 1.0
+   CONSTRUCTOR                    = XenHypercallLibConstruct
+-
+-[Defines.IA32, Defines.X64]
+-  LIBRARY_CLASS                  = XenHypercallLib|PEIM DXE_DRIVER UEFI_DRIVER
+-
+-[Defines.ARM, Defines.AARCH64]
+   LIBRARY_CLASS                  = XenHypercallLib
+ 
+ #
+@@ -52,6 +47,7 @@
+   OvmfPkg/OvmfPkg.dec
+ 
+ [LibraryClasses.IA32, LibraryClasses.X64]
++  CpuLib
+   BaseLib
+   HobLib
+   DebugLib
