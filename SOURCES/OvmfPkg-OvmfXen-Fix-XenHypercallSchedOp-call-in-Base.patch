@@ -1,0 +1,26 @@
+From ca0076b9455dbaef5b98f504c8f3beb64050cd78 Mon Sep 17 00:00:00 2001
+From: Teddy Astie <teddy.astie@vates.tech>
+Date: Mon, 19 Jan 2026 15:49:06 +0100
+Subject: [PATCH] OvmfPkg/OvmfXen: Fix XenHypercallSchedOp call in
+ BaseResetShutdownXen
+
+XenHypercallSchedOp wants a pointer as second parameter.
+
+Signed-off-by: Teddy Astie <teddy.astie@vates.tech>
+---
+ OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c b/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c
+index 5130e87805e7..50c9fe9c505a 100644
+--- a/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c
++++ b/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c
+@@ -54,7 +54,7 @@ ResetShutdown (
+       XEN_SCHED_SHUTDOWN  ShutdownOp = {
+         .Reason = XEN_SHED_SHUTDOWN_POWEROFF,
+       };
+-      ReturnCode = XenHypercallSchedOp (XEN_SCHEDOP_SHUTDOWN, ShutdownOp);
++      ReturnCode = XenHypercallSchedOp (XEN_SCHEDOP_SHUTDOWN, &ShutdownOp);
+       ASSERT (ReturnCode == 0);
+       CpuDeadLoop ();
+     }

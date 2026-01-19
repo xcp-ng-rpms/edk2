@@ -1,0 +1,25 @@
+From ff9bd64b9d59d8e7234fd70f6afe9f5fa35abc11 Mon Sep 17 00:00:00 2001
+From: Teddy Astie <teddy.astie@vates.tech>
+Date: Mon, 19 Jan 2026 15:46:34 +0100
+Subject: [PATCH] OvmfPkg/OvmfXen: Add missing Xen's sched.h include
+
+BaseResetShutdownXen.c relies on XEN_SCHEDOP_SHUTDOWN which is included
+in IndustryStandard/Xen/sched.h.
+
+Signed-off-by: Teddy Astie <teddy.astie@vates.tech>
+---
+ OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c b/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c
+index f45d9125feb4..5130e87805e7 100644
+--- a/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c
++++ b/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c
+@@ -10,6 +10,7 @@
+ 
+ #include <Base.h>                   // BIT13
+ 
++#include <IndustryStandard/Xen/sched.h>
+ #include <Library/BaseLib.h>        // CpuDeadLoop()
+ #include <Library/DebugLib.h>       // ASSERT()
+ #include <Library/IoLib.h>          // IoOr16()

@@ -1,0 +1,133 @@
+From 6ed258d89dea23b1864f8fdd730879377099a129 Mon Sep 17 00:00:00 2001
+From: Anthony PERARD <anthony.perard@citrix.com>
+Date: Mon, 19 Sep 2022 17:16:46 +0100
+Subject: [PATCH] OvmfPkg/XenHypercallLib: Add SchedOp hypercall
+
+Add a new function to allow to make an hypercall to shutdown the
+machine.
+
+This import "sched.h" public header from Xen Project's repo. Some
+changes have been made to be closer to EDK2's coding style.
+
+Add the entire OvmfPkg/Include/IndustryStandard/Xen/ directory to
+LicenseCheck ignore.  All the existing header files, as well as the new
+sched.h, are MIT licensed.
+
+Signed-off-by: Anthony PERARD <anthony.perard@citrix.com>
+Signed-off-by: Jason Andryuk <jason.andryuk@amd.com>
+---
+ OvmfPkg/Include/IndustryStandard/Xen/sched.h  | 50 +++++++++++++++++++
+ OvmfPkg/Include/Library/XenHypercallLib.h     |  7 +++
+ .../Library/XenHypercallLib/XenHypercall.c    | 14 ++++++
+ OvmfPkg/OvmfPkg.ci.yaml                       |  3 +-
+ 4 files changed, 73 insertions(+), 1 deletion(-)
+ create mode 100644 OvmfPkg/Include/IndustryStandard/Xen/sched.h
+
+diff --git a/OvmfPkg/Include/IndustryStandard/Xen/sched.h b/OvmfPkg/Include/IndustryStandard/Xen/sched.h
+new file mode 100644
+index 000000000000..5ca0017f1ad6
+--- /dev/null
++++ b/OvmfPkg/Include/IndustryStandard/Xen/sched.h
+@@ -0,0 +1,50 @@
++/******************************************************************************
++ * sched.h
++ *
++ * Scheduler state interactions
++ *
++ * SPDX-License-Identifier: MIT
++ *
++ * Copyright (c) 2005, Keir Fraser <keir@xensource.com>
++ */
++
++#ifndef __XEN_PUBLIC_SCHED_H__
++#define __XEN_PUBLIC_SCHED_H__
++
++#include "event_channel.h"
++
++/*
++ * Halt execution of this domain (all VCPUs) and notify the system controller.
++ * @arg == pointer to sched_shutdown_t structure.
++ *
++ * If the sched_shutdown_t reason is SHUTDOWN_suspend then
++ * x86 PV guests must also set RDX (EDX for 32-bit guests) to the MFN
++ * of the guest's start info page.  RDX/EDX is the third hypercall
++ * argument.
++ *
++ * In addition, which reason is SHUTDOWN_suspend this hypercall
++ * returns 1 if suspend was cancelled or the domain was merely
++ * checkpointed, and 0 if it is resuming in a new domain.
++ */
++#define XEN_SCHEDOP_SHUTDOWN  2
++
++struct _XEN_SCHED_SHUTDOWN {
++  UINT32    Reason; /* SHUTDOWN_* => enum sched_shutdown_reason */
++};
++
++typedef struct _XEN_SCHED_SHUTDOWN XEN_SCHED_SHUTDOWN;
++DEFINE_XEN_GUEST_HANDLE (XEN_SCHED_SHUTDOWN);
++
++/*
++ * Reason codes for SCHEDOP_shutdown. These may be interpreted by control
++ * software to determine the appropriate action. For the most part, Xen does
++ * not care about the shutdown code.
++ */
++/* ` enum sched_shutdown_reason { */
++#define XEN_SHED_SHUTDOWN_POWEROFF  0  /* Domain exited normally. Clean up and kill. */
++#define XEN_SHED_SHUTDOWN_REBOOT    1  /* Clean up, kill, and then restart.          */
++#define XEN_SHED_SHUTDOWN_SUSPEND   2  /* Clean up, save suspend info, kill.         */
++#define XEN_SHED_SHUTDOWN_CRASH     3  /* Tell controller we've crashed.             */
++#define XEN_SHED_SHUTDOWN_WATCHDOG  4  /* Restart because watchdog time expired.     */
++
++#endif /* __XEN_PUBLIC_SCHED_H__ */
+diff --git a/OvmfPkg/Include/Library/XenHypercallLib.h b/OvmfPkg/Include/Library/XenHypercallLib.h
+index 28eee8ccac85..d7cf2c0c505b 100644
+--- a/OvmfPkg/Include/Library/XenHypercallLib.h
++++ b/OvmfPkg/Include/Library/XenHypercallLib.h
+@@ -101,4 +101,11 @@ XenHypercallEventChannelOp (
+   IN OUT VOID  *Arguments
+   );
+ 
++INTN
++EFIAPI
++XenHypercallSchedOp (
++  IN     INTN  Operation,
++  IN OUT VOID  *Arguments
++  );
++
+ #endif
+diff --git a/OvmfPkg/Library/XenHypercallLib/XenHypercall.c b/OvmfPkg/Library/XenHypercallLib/XenHypercall.c
+index 65b14a11f402..b1a129998fdc 100644
+--- a/OvmfPkg/Library/XenHypercallLib/XenHypercall.c
++++ b/OvmfPkg/Library/XenHypercallLib/XenHypercall.c
+@@ -87,3 +87,17 @@ XenHypercallEventChannelOp (
+            (INTN)Arguments
+            );
+ }
++
++INTN
++EFIAPI
++XenHypercallSchedOp (
++  IN     INTN  Operation,
++  IN OUT VOID  *Arguments
++  )
++{
++  return XenHypercall2 (
++           __HYPERVISOR_sched_op,
++           Operation,
++           (INTN)Arguments
++           );
++}
+diff --git a/OvmfPkg/OvmfPkg.ci.yaml b/OvmfPkg/OvmfPkg.ci.yaml
+index ff022242b018..7ce1be283f77 100644
+--- a/OvmfPkg/OvmfPkg.ci.yaml
++++ b/OvmfPkg/OvmfPkg.ci.yaml
+@@ -11,7 +11,8 @@
+ {
+     ## options defined .pytool/Plugin/LicenseCheck
+     "LicenseCheck": {
+-        "IgnoreFiles": []
++        ## Imported from Xen and MIT licensed.
++        "IgnoreFiles": ["OvmfPkg/Include/IndustryStandard/Xen"]
+     },
+     "EccCheck": {
+         ## Exception sample looks like below:
