@@ -1,0 +1,329 @@
+From 0b0b7041cc6cab48479caeb4013f2a77b26b9b1d Mon Sep 17 00:00:00 2001
+From: Anthony PERARD <anthony.perard@citrix.com>
+Date: Mon, 19 Sep 2022 17:18:16 +0100
+Subject: [PATCH] OvmfPkg/OvmfXen: Introduce Xen's ResetSystemLib, to use xen
+ hypercall
+
+When booting OvmfXen, the ACPI interface for shutdown/reset might not
+be available, instead use the hypercall interface.
+
+While it's probably possible to use the hypercall in all cases, we
+keep using the same interface while it still possible. That is ACPI on
+HVM guest, and fallback to hypercall on PVH guest.
+
+Signed-off-by: Anthony PERARD <anthony.perard@citrix.com>
+Signed-off-by: Jason Andryuk <jason.andryuk@amd.com>
+---
+ .../ResetSystemLib/BaseResetShutdownXen.c     | 65 ++++++++++++++++
+ .../ResetSystemLib/BaseResetSystemLibXen.inf  | 41 ++++++++++
+ .../ResetSystemLib/DxeResetShutdownXen.c      | 77 +++++++++++++++++++
+ .../ResetSystemLib/DxeResetSystemLibXen.inf   | 46 +++++++++++
+ OvmfPkg/OvmfXen.dsc                           | 10 +--
+ 5 files changed, 234 insertions(+), 5 deletions(-)
+ create mode 100644 OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c
+ create mode 100644 OvmfPkg/Library/ResetSystemLib/BaseResetSystemLibXen.inf
+ create mode 100644 OvmfPkg/Library/ResetSystemLib/DxeResetShutdownXen.c
+ create mode 100644 OvmfPkg/Library/ResetSystemLib/DxeResetSystemLibXen.inf
+
+diff --git a/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c b/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c
+new file mode 100644
+index 000000000000..f45d9125feb4
+--- /dev/null
++++ b/OvmfPkg/Library/ResetSystemLib/BaseResetShutdownXen.c
+@@ -0,0 +1,65 @@
++/** @file
++  Base Reset System Library Shutdown API implementation for OVMF.
++
++  Copyright (C) 2020, Red Hat, Inc.
++  Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
++  Copyright (c) 2022, Citrix Systems, Inc.
++
++  SPDX-License-Identifier: BSD-2-Clause-Patent
++**/
++
++#include <Base.h>                   // BIT13
++
++#include <Library/BaseLib.h>        // CpuDeadLoop()
++#include <Library/DebugLib.h>       // ASSERT()
++#include <Library/IoLib.h>          // IoOr16()
++#include <Library/PciLib.h>         // PciRead16()
++#include <Library/ResetSystemLib.h> // ResetShutdown()
++#include <Library/XenHypercallLib.h>
++#include <OvmfPlatforms.h>          // OVMF_HOSTBRIDGE_DID
++
++/**
++  Calling this function causes the system to enter a power state equivalent
++  to the ACPI G2/S5 or G3 states.
++
++  System shutdown should not return, if it returns, it means the system does
++  not support shut down reset.
++**/
++VOID
++EFIAPI
++ResetShutdown (
++  VOID
++  )
++{
++  UINT16  AcpiPmBaseAddress;
++  UINT16  HostBridgeDevId;
++
++  AcpiPmBaseAddress = 0;
++  HostBridgeDevId   = PciRead16 (OVMF_HOSTBRIDGE_DID);
++  switch (HostBridgeDevId) {
++    case INTEL_82441_DEVICE_ID:
++      AcpiPmBaseAddress = PIIX4_PMBA_VALUE;
++      break;
++    case INTEL_Q35_MCH_DEVICE_ID:
++      AcpiPmBaseAddress = ICH9_PMBASE_VALUE;
++      break;
++    default:
++    {
++      //
++      // Fallback to using hypercall.
++      // Necessary for PVH guest, but should work for HVM guest.
++      //
++      INTN                ReturnCode;
++      XEN_SCHED_SHUTDOWN  ShutdownOp = {
++        .Reason = XEN_SHED_SHUTDOWN_POWEROFF,
++      };
++      ReturnCode = XenHypercallSchedOp (XEN_SCHEDOP_SHUTDOWN, ShutdownOp);
++      ASSERT (ReturnCode == 0);
++      CpuDeadLoop ();
++    }
++  }
++
++  IoBitFieldWrite16 (AcpiPmBaseAddress + 4, 10, 13, 0);
++  IoOr16 (AcpiPmBaseAddress + 4, BIT13);
++  CpuDeadLoop ();
++}
+diff --git a/OvmfPkg/Library/ResetSystemLib/BaseResetSystemLibXen.inf b/OvmfPkg/Library/ResetSystemLib/BaseResetSystemLibXen.inf
+new file mode 100644
+index 000000000000..8d75dd565365
+--- /dev/null
++++ b/OvmfPkg/Library/ResetSystemLib/BaseResetSystemLibXen.inf
+@@ -0,0 +1,41 @@
++## @file
++#  Base library instance for ResetSystem library class for Xen
++#
++#  Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
++#  Copyright (c) 2022, Citrix Systems, Inc.
++#
++#  SPDX-License-Identifier: BSD-2-Clause-Patent
++#
++##
++
++[Defines]
++  INF_VERSION                    = 0x00010005
++  BASE_NAME                      = BaseResetSystemLib
++  FILE_GUID                      = 9ef32aa1-9e82-4fb1-9c49-0eff538601f8
++  MODULE_TYPE                    = BASE
++  VERSION_STRING                 = 1.0
++  LIBRARY_CLASS                  = ResetSystemLib|SEC PEI_CORE PEIM DXE_CORE
++
++#
++# The following information is for reference only and not required by the build
++# tools.
++#
++#  VALID_ARCHITECTURES           = IA32 X64
++#
++
++[Sources]
++  BaseResetShutdownXen.c
++  ResetSystemLib.c
++
++[Packages]
++  MdeModulePkg/MdeModulePkg.dec
++  MdePkg/MdePkg.dec
++  OvmfPkg/OvmfPkg.dec
++
++[LibraryClasses]
++  BaseLib
++  DebugLib
++  IoLib
++  PciLib
++  TimerLib
++  XenHypercallLib
+diff --git a/OvmfPkg/Library/ResetSystemLib/DxeResetShutdownXen.c b/OvmfPkg/Library/ResetSystemLib/DxeResetShutdownXen.c
+new file mode 100644
+index 000000000000..f7f32765cfc9
+--- /dev/null
++++ b/OvmfPkg/Library/ResetSystemLib/DxeResetShutdownXen.c
+@@ -0,0 +1,77 @@
++/** @file
++  DXE Reset System Library Shutdown API implementation for OVMF.
++
++  Copyright (C) 2020, Red Hat, Inc.
++  Copyright (c) 2006 - 2019, Intel Corporation. All rights reserved.<BR>
++  SPDX-License-Identifier: BSD-2-Clause-Patent
++**/
++
++#include <Base.h>                   // BIT13
++
++#include <IndustryStandard/Xen/sched.h>
++#include <Library/BaseLib.h>        // CpuDeadLoop()
++#include <Library/DebugLib.h>       // ASSERT()
++#include <Library/IoLib.h>          // IoOr16()
++#include <Library/PcdLib.h>         // PcdGet16()
++#include <Library/ResetSystemLib.h> // ResetShutdown()
++#include <Library/XenHypercallLib.h>
++#include <OvmfPlatforms.h>          // PIIX4_PMBA_VALUE
++
++STATIC UINT16  mAcpiPmBaseAddress;
++
++EFI_STATUS
++EFIAPI
++DxeResetInit (
++  IN EFI_HANDLE        ImageHandle,
++  IN EFI_SYSTEM_TABLE  *SystemTable
++  )
++{
++  UINT16  HostBridgeDevId;
++
++  HostBridgeDevId = PcdGet16 (PcdOvmfHostBridgePciDevId);
++  switch (HostBridgeDevId) {
++    case INTEL_82441_DEVICE_ID:
++      mAcpiPmBaseAddress = PIIX4_PMBA_VALUE;
++      break;
++    case INTEL_Q35_MCH_DEVICE_ID:
++      mAcpiPmBaseAddress = ICH9_PMBASE_VALUE;
++      break;
++    default:
++      //
++      // Fallback to using hypercall.
++      // Necessary for PVH guest, but should work for HVM guest.
++      //
++      mAcpiPmBaseAddress = 0xffff;
++      break;
++  }
++
++  return EFI_SUCCESS;
++}
++
++/**
++  Calling this function causes the system to enter a power state equivalent
++  to the ACPI G2/S5 or G3 states.
++
++  System shutdown should not return, if it returns, it means the system does
++  not support shut down reset.
++**/
++VOID
++EFIAPI
++ResetShutdown (
++  VOID
++  )
++{
++  if (mAcpiPmBaseAddress != 0xffff) {
++    IoBitFieldWrite16 (mAcpiPmBaseAddress + 4, 10, 13, 0);
++    IoOr16 (mAcpiPmBaseAddress + 4, BIT13);
++  } else {
++    INTN                ReturnCode;
++    XEN_SCHED_SHUTDOWN  ShutdownOp = {
++      .Reason = XEN_SHED_SHUTDOWN_POWEROFF,
++    };
++    ReturnCode = XenHypercallSchedOp (XEN_SCHEDOP_SHUTDOWN, &ShutdownOp);
++    ASSERT (ReturnCode == 0);
++  }
++
++  CpuDeadLoop ();
++}
+diff --git a/OvmfPkg/Library/ResetSystemLib/DxeResetSystemLibXen.inf b/OvmfPkg/Library/ResetSystemLib/DxeResetSystemLibXen.inf
+new file mode 100644
+index 000000000000..ccee69e6e1fa
+--- /dev/null
++++ b/OvmfPkg/Library/ResetSystemLib/DxeResetSystemLibXen.inf
+@@ -0,0 +1,46 @@
++## @file
++#  DXE library instance for ResetSystem library class for Xen
++#
++#  Copyright (C) 2020, Red Hat, Inc.
++#  Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
++#  Copyright (c) 2022, Citrix Systems, Inc.
++#
++#  SPDX-License-Identifier: BSD-2-Clause-Patent
++#
++##
++
++[Defines]
++  INF_VERSION                    = 1.29
++  BASE_NAME                      = DxeResetSystemLibXen
++  FILE_GUID                      = a5ac25e6-4dc5-4fd9-92cd-74e46bd2e72a
++  MODULE_TYPE                    = DXE_DRIVER
++  VERSION_STRING                 = 1.0
++  LIBRARY_CLASS                  = ResetSystemLib|DXE_DRIVER DXE_RUNTIME_DRIVER SMM_CORE DXE_SMM_DRIVER UEFI_DRIVER UEFI_APPLICATION
++  CONSTRUCTOR                    = DxeResetInit
++
++#
++# The following information is for reference only and not required by the build
++# tools.
++#
++#  VALID_ARCHITECTURES           = IA32 X64
++#
++
++[Sources]
++  DxeResetShutdownXen.c
++  ResetSystemLib.c
++
++[Packages]
++  MdeModulePkg/MdeModulePkg.dec
++  MdePkg/MdePkg.dec
++  OvmfPkg/OvmfPkg.dec
++
++[LibraryClasses]
++  BaseLib
++  DebugLib
++  IoLib
++  PcdLib
++  TimerLib
++  XenHypercallLib
++
++[Pcd]
++  gUefiOvmfPkgTokenSpaceGuid.PcdOvmfHostBridgePciDevId ## CONSUMES
+diff --git a/OvmfPkg/OvmfXen.dsc b/OvmfPkg/OvmfXen.dsc
+index c6fc3031caee..f6846c20ff40 100644
+--- a/OvmfPkg/OvmfXen.dsc
++++ b/OvmfPkg/OvmfXen.dsc
+@@ -120,7 +120,7 @@
+ [LibraryClasses]
+   PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
+   TimerLib|MdePkg/Library/SecPeiDxeTimerLibCpu/SecPeiDxeTimerLibCpu.inf
+-  ResetSystemLib|OvmfPkg/Library/ResetSystemLib/BaseResetSystemLib.inf
++  ResetSystemLib|OvmfPkg/Library/ResetSystemLib/BaseResetSystemLibXen.inf
+   PrintLib|MdePkg/Library/BasePrintLib/BasePrintLib.inf
+   BaseMemoryLib|MdePkg/Library/BaseMemoryLibRepStr/BaseMemoryLibRepStr.inf
+   BaseLib|MdePkg/Library/BaseLib/BaseLib.inf
+@@ -302,7 +302,7 @@
+ 
+ [LibraryClasses.common.DXE_RUNTIME_DRIVER]
+   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
+-  ResetSystemLib|OvmfPkg/Library/ResetSystemLib/DxeResetSystemLib.inf
++  ResetSystemLib|OvmfPkg/Library/ResetSystemLib/DxeResetSystemLibXen.inf
+   HobLib|MdePkg/Library/DxeHobLib/DxeHobLib.inf
+   DxeCoreEntryPoint|MdePkg/Library/DxeCoreEntryPoint/DxeCoreEntryPoint.inf
+   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
+@@ -315,7 +315,7 @@
+ 
+ [LibraryClasses.common.UEFI_DRIVER]
+   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
+-  ResetSystemLib|OvmfPkg/Library/ResetSystemLib/DxeResetSystemLib.inf
++  ResetSystemLib|OvmfPkg/Library/ResetSystemLib/DxeResetSystemLibXen.inf
+   HobLib|MdePkg/Library/DxeHobLib/DxeHobLib.inf
+   DxeCoreEntryPoint|MdePkg/Library/DxeCoreEntryPoint/DxeCoreEntryPoint.inf
+   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
+@@ -326,7 +326,7 @@
+ [LibraryClasses.common.DXE_DRIVER]
+   AcpiPlatformLib|OvmfPkg/Library/AcpiPlatformLib/DxeAcpiPlatformLib.inf
+   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
+-  ResetSystemLib|OvmfPkg/Library/ResetSystemLib/DxeResetSystemLib.inf
++  ResetSystemLib|OvmfPkg/Library/ResetSystemLib/DxeResetSystemLibXen.inf
+   HobLib|MdePkg/Library/DxeHobLib/DxeHobLib.inf
+   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
+   ReportStatusCodeLib|MdeModulePkg/Library/DxeReportStatusCodeLib/DxeReportStatusCodeLib.inf
+@@ -346,7 +346,7 @@
+ 
+ [LibraryClasses.common.UEFI_APPLICATION]
+   PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
+-  ResetSystemLib|OvmfPkg/Library/ResetSystemLib/DxeResetSystemLib.inf
++  ResetSystemLib|OvmfPkg/Library/ResetSystemLib/DxeResetSystemLibXen.inf
+   HobLib|MdePkg/Library/DxeHobLib/DxeHobLib.inf
+   MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
+   ReportStatusCodeLib|MdeModulePkg/Library/DxeReportStatusCodeLib/DxeReportStatusCodeLib.inf

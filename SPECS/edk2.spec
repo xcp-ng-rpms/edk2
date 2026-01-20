@@ -21,7 +21,7 @@
 Name: edk2
 Summary: EFI Development Kit II
 Version: 20220801
-Release: %{?xsrel}.1%{?dist}
+Release: %{?xsrel}.3%{?dist}
 
 License: BSD and MIT
 URL: https://github.com/tianocore/edk2
@@ -73,7 +73,6 @@ Patch39: MdePkg-SecPeiDxeTimerLibCpu-Support-for-dynamic-PcdF.patch
 Patch40: OvmfPkg-OvmfXen-Use-RuntimeTimerLibCpu-for-DXE_DRIVER.patch
 Patch41: add-option-to-disable-bgrt.patch
 Patch42: use-rtc.patch
-Patch43: move-xenconnect-later.patch
 Patch44: xen-rng-dxe.patch
 Patch45: nvidia-vgpu-support.patch
 Patch46: gvt-g-support.patch
@@ -96,6 +95,14 @@ Patch61: remove-vlan-tag-from-a-packet.patch
 # XCP-ng patches
 Patch1001: UefiCpuPkg-CpuMpPei-Workaround-page-table-allocation.patch
 Patch1002: 0001-OvmfPkg-XenPlatformPei-Allocate-more-memory-when-PEI.patch
+
+## PVH support
+Patch1003: OvmfPkg-XenHypercallLib-use-direct-hypercalls.patch
+Patch1004: OvmfPkg-XenPlatformPei-Remove-Hypercall-Page.patch
+Patch1005: OvmfPkg-XenHypercallLib-Add-SchedOp-hypercall.patch
+Patch1006: OvmfPkg-OvmfXen-Introduce-Xen-ResetSystemLib.patch
+Patch1007: OvmfPkg-OvmfXen-Add-missing-Xen-s-sched.h-include.patch
+Patch1008: OvmfPkg-OvmfXen-Fix-XenHypercallSchedOp-call-in-Base.patch
 
 %if 0%{?xenserver} < 9
 BuildRequires: devtoolset-11-binutils
@@ -159,7 +166,7 @@ cp %{_datadir}/ipxe/8086100e.efi .
     -D TPM2_ENABLE \
     -b DEBUG \
     --pcd gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel=0xFFFFFF4F \
-    --pcd gUefiCpuPkgTokenSpaceGuid.PcdCpuMaxLogicalProcessorNumber=96 \
+    --pcd gUefiCpuPkgTokenSpaceGuid.PcdCpuMaxLogicalProcessorNumber=128 \
     -p OvmfPkg/OvmfXen.dsc -n %{?_smp_flags}
 
 cp Build/OvmfXen/DEBUG_GCC*/FV/OVMF.fd OVMF-debug.fd
@@ -181,12 +188,31 @@ rm -rf Build/OvmfXen/DEBUG_GCC*
     -D TPM2_ENABLE \
     -b DEBUG \
     --pcd gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel=0x80000000 \
-    --pcd gUefiCpuPkgTokenSpaceGuid.PcdCpuMaxLogicalProcessorNumber=96 \
+    --pcd gUefiCpuPkgTokenSpaceGuid.PcdCpuMaxLogicalProcessorNumber=128 \
     -p OvmfPkg/OvmfXen.dsc -n %{?_smp_flags}
 
 cp Build/OvmfXen/DEBUG_GCC*/FV/OVMF.fd OVMF-release.fd
 python3 %{SOURCE1} Build/OvmfXen/DEBUG_GCC*/FV/PEIFV.Fv Build/OvmfXen/DEBUG_GCC*/FV/DXEFV.Fv > OVMF-release.pcrs
+rm -rf Build/OvmfXen/DEBUG_GCC*
 
+%{?_cov_wrap} OvmfPkg/build.sh \
+    -D SECURE_BOOT_ENABLE=FALSE \
+    -D BGRT_ENABLE=FALSE \
+    -D NETWORK_IP6_ENABLE=TRUE \
+    -D IPXE_ENABLE=TRUE \
+    -D NETWORK_HTTP_BOOT_ENABLE=FALSE \
+    -D NETWORK_TLS_ENABLE=FALSE \
+    -D NETWORK_ISCSI_ENABLE=FALSE \
+    -D XEN_VARIABLE_ENABLE=FALSE \
+    -D EXTRA_MODULES_ENABLE=FALSE \
+    -D FD_SIZE_2MB \
+    -D TPM1_ENABLE=FALSE \
+    -D TPM2_ENABLE=FALSE \
+    -b RELEASE \
+    --pcd gUefiCpuPkgTokenSpaceGuid.PcdCpuMaxLogicalProcessorNumber=128 \
+    -p OvmfPkg/OvmfXen.dsc -n %{?_smp_flags}
+
+cp Build/OvmfXen/RELEASE_GCC*/FV/OVMF.fd OVMF-pvh.elf
 
 %install
 
@@ -197,6 +223,7 @@ source /opt/rh/devtoolset-11/enable
 install -m 755 -d %{buildroot}/%{_datadir}/%{name}
 install -m 644 OVMF-debug.fd %{buildroot}/%{_datadir}/%{name}/OVMF-debug.fd
 install -m 644 OVMF-release.fd %{buildroot}/%{_datadir}/%{name}/OVMF-release.fd
+install -m 644 OVMF-pvh.elf %{buildroot}/%{_datadir}/%{name}/OVMF-pvh.elf
 ln -sf OVMF-release.fd %{buildroot}/%{_datadir}/%{name}/OVMF.fd
 
 install -m 644 OVMF-debug.pcrs %{buildroot}/%{_datadir}/%{name}/OVMF-debug.pcrs
@@ -218,6 +245,14 @@ cp OvmfPkg/License.txt License.ovmf
 
 
 %changelog
+* Tue Jan 20 2026 Teddy Astie <teddy.astie@vates.tech> - 20220801-1.7.10.3
+- Phase-out use of hypercall page
+- Introduce PVH build
+- Drop move-xenconnect-later.patch due to not being needed anymore with hypercall page removal.
+
+* Tue Jan 20 2026 Teddy Astie <teddy.astie@vates.tech> - 20220801-1.7.10.2
+- Bump vCPU limit to 128 from 96
+
 * Wed Aug 06 2025 anthony.perard@vates.tech - 20220801-1.7.10.1
 - Sync with edk2-20220801-1.7.10
 - *** Upstream changelog ***
