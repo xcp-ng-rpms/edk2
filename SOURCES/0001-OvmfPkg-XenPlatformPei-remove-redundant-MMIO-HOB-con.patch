@@ -1,0 +1,16 @@
+diff --git a/OvmfPkg/XenPlatformPei/Platform.c b/OvmfPkg/XenPlatformPei/Platform.c
+index c3fdf3d0b8..678fd5e5a4 100644
+--- a/OvmfPkg/XenPlatformPei/Platform.c
++++ b/OvmfPkg/XenPlatformPei/Platform.c
+@@ -174,11 +174,6 @@ MemMapInitialization (
+     sizeof (mDefaultMemoryTypeInformation)
+     );
+ 
+-  //
+-  // Video memory + Legacy BIOS region
+-  //
+-  AddIoMemoryRangeHob (0x0A0000, BASE_1MB);
+-
+   //
+   // Add PCI IO Port space available for PCI resource allocations.
+   //

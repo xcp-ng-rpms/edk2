@@ -98,6 +98,7 @@ Patch63: remove-vlan-tag-from-a-packet.patch
 # XCP-ng patches
 Patch1001: UefiCpuPkg-CpuMpPei-Workaround-page-table-allocation.patch
 Patch1002: 0001-OvmfPkg-XenPlatformPei-Allocate-more-memory-when-PEI.patch
+Patch1003: 0001-OvmfPkg-XenPlatformPei-remove-redundant-MMIO-HOB-con.patch
 
 %if 0%{?xenserver} < 9
 BuildRequires: devtoolset-11-binutils
