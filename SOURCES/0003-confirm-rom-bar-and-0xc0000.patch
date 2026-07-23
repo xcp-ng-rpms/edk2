@@ -1,0 +1,37 @@
+diff --git a/MdeModulePkg/Bus/Pci/PciBusDxe/PciOptionRomSupport.c b/MdeModulePkg/Bus/Pci/PciBusDxe/PciOptionRomSupport.c
+index c290884110..6f5fdc0fbd 100644
+--- a/MdeModulePkg/Bus/Pci/PciBusDxe/PciOptionRomSupport.c
++++ b/MdeModulePkg/Bus/Pci/PciBusDxe/PciOptionRomSupport.c
+@@ -591,6 +591,9 @@ RomDecode (
+ 
+   PciIo = &PciDevice->PciIo;
+   if (Enable) {
++    DEBUG ((DEBUG_ERROR, "RomDecode: RomBarIndex=%x RomBar=%x\n",
++      RomBarIndex, RomBar));
++
+     //
+     // set the Rom base address: now is hardcode
+     // enable its decoder
+diff --git a/OvmfPkg/QemuVideoDxe/Driver.c b/OvmfPkg/QemuVideoDxe/Driver.c
+index 6feca83802..67a76ba3cb 100644
+--- a/OvmfPkg/QemuVideoDxe/Driver.c
++++ b/OvmfPkg/QemuVideoDxe/Driver.c
+@@ -315,6 +315,18 @@ QemuVideoControllerDriverStart (
+     goto ClosePciIo;
+   }
+ 
++  {
++    UINT32  RomContent;
++    RomContent = *(volatile UINT32 *)(UINTN)0xC0000;
++    DEBUG ((DEBUG_ERROR, "QemuVideoDxe after Attributes: 0xC0000 = %08x ('%c%c%c%c')\n",
++      RomContent,
++      (RomContent >>  0) & 0xFF,
++      (RomContent >>  8) & 0xFF,
++      (RomContent >> 16) & 0xFF,
++      (RomContent >> 24) & 0xFF
++      ));
++  }
++
+   //
+   // Check whenever the qemu stdvga mmio bar is present (qemu 1.3+).
+   //
