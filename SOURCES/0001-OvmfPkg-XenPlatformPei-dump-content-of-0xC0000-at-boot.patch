@@ -1,0 +1,36 @@
+From 4a989527cfd293d2f47827e3cda2f82f87f7cc0c Mon Sep 17 00:00:00 2001
+From: Yann Sionneau <yann.sionneau@vates.tech>
+Date: Thu, 23 Jul 2026 10:31:45 +0200
+Subject: [PATCH] OvmfPkg/XenPlatformPei: dump content of 0xC0000 at boot
+
+---
+ OvmfPkg/XenPlatformPei/Platform.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/OvmfPkg/XenPlatformPei/Platform.c b/OvmfPkg/XenPlatformPei/Platform.c
+index c3fdf3d0b8..c75f4aac7b 100644
+--- a/OvmfPkg/XenPlatformPei/Platform.c
++++ b/OvmfPkg/XenPlatformPei/Platform.c
+@@ -444,6 +444,19 @@ InitializeXenPlatform (
+ 
+   DEBUG ((DEBUG_INFO, "Platform PEIM Loaded\n"));
+ 
++  {
++    UINT32  RomContent;
++
++    RomContent = *(volatile UINT32 *)(UINTN)0xC0000;
++    DEBUG ((DEBUG_INFO, "Content of 0xC0000: %08x ('%c%c%c%c')\n",
++      RomContent,
++      (RomContent >>  0) & 0xFF,
++      (RomContent >>  8) & 0xFF,
++      (RomContent >> 16) & 0xFF,
++      (RomContent >> 24) & 0xFF
++      ));
++  }
++
+   //
+   // Platform Info HOB used by QemuFw libraries
+   //
+-- 
+2.53.0
+
