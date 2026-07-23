@@ -19,7 +19,7 @@ index c3fdf3d0b8..c75f4aac7b 100644
 +    UINT32  RomContent;
 +
 +    RomContent = *(volatile UINT32 *)(UINTN)0xC0000;
-+    DEBUG ((DEBUG_INFO, "Content of 0xC0000: %08x ('%c%c%c%c')\n",
++    DEBUG ((DEBUG_ERROR, "Content of 0xC0000: %08x ('%c%c%c%c')\n",
 +      RomContent,
 +      (RomContent >>  0) & 0xFF,
 +      (RomContent >>  8) & 0xFF,
