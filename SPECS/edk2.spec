@@ -99,6 +99,7 @@ Patch63: remove-vlan-tag-from-a-packet.patch
 Patch1001: UefiCpuPkg-CpuMpPei-Workaround-page-table-allocation.patch
 Patch1002: 0001-OvmfPkg-XenPlatformPei-Allocate-more-memory-when-PEI.patch
 Patch1003: 0001-OvmfPkg-XenPlatformPei-dump-content-of-0xC0000-at-boot.patch
+Patch1004: 0002-add-dxe-bds-debug-prints.patch
 
 %if 0%{?xenserver} < 9
 BuildRequires: devtoolset-11-binutils

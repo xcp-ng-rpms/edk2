@@ -1,0 +1,69 @@
+diff --git a/MdeModulePkg/Core/Dxe/DxeMain/DxeMain.c b/MdeModulePkg/Core/Dxe/DxeMain/DxeMain.c
+index e7b3d0be84..a17336c7dc 100644
+--- a/MdeModulePkg/Core/Dxe/DxeMain/DxeMain.c
++++ b/MdeModulePkg/Core/Dxe/DxeMain/DxeMain.c
+@@ -577,6 +577,18 @@ DxeMain (
+ 
+   ASSERT_EFI_ERROR (Status);
+ 
++  {
++    UINT32  RomContent;
++    RomContent = *(volatile UINT32 *)(UINTN)0xC0000;
++    DEBUG ((DEBUG_ERROR, "DXE after dispatch: 0xC0000 = %08x ('%c%c%c%c')\n",
++      RomContent,
++      (RomContent >>  0) & 0xFF,
++      (RomContent >>  8) & 0xFF,
++      (RomContent >> 16) & 0xFF,
++      (RomContent >> 24) & 0xFF
++      ));
++  }
++
+   //
+   // Report Status code before transfer control to BDS
+   //
+diff --git a/MdeModulePkg/Universal/BdsDxe/BdsEntry.c b/MdeModulePkg/Universal/BdsDxe/BdsEntry.c
+index 8c4064c191..8158ab9430 100644
+--- a/MdeModulePkg/Universal/BdsDxe/BdsEntry.c
++++ b/MdeModulePkg/Universal/BdsDxe/BdsEntry.c
+@@ -1107,6 +1107,18 @@ BdsEntry (
+       }
+     }
+ 
++    {
++      UINT32  RomContent;
++      RomContent = *(volatile UINT32 *)(UINTN)0xC0000;
++      DEBUG ((DEBUG_ERROR, "BDS before boot: 0xC0000 = %08x ('%c%c%c%c')\n",
++        RomContent,
++        (RomContent >>  0) & 0xFF,
++        (RomContent >>  8) & 0xFF,
++        (RomContent >> 16) & 0xFF,
++        (RomContent >> 24) & 0xFF
++        ));
++    }
++
+     do {
+       //
+       // Retry to boot if any of the boot succeeds.
+diff --git a/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c b/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c
+index 3edb92fabc..90d20dc6e8 100644
+--- a/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c
++++ b/OvmfPkg/Library/PlatformBootManagerLib/BdsPlatform.c
+@@ -1557,6 +1557,18 @@ PlatformBdsConnectSequence (
+     DEBUG ((DEBUG_INFO, "EfiBootManagerConnectAll\n"));
+     EfiBootManagerConnectAll ();
+   }
++
++  {
++    UINT32  RomContent;
++    RomContent = *(volatile UINT32 *)(UINTN)0xC0000;
++    DEBUG ((DEBUG_ERROR, "BDS after connect: 0xC0000 = %08x ('%c%c%c%c')\n",
++      RomContent,
++      (RomContent >>  0) & 0xFF,
++      (RomContent >>  8) & 0xFF,
++      (RomContent >> 16) & 0xFF,
++      (RomContent >> 24) & 0xFF
++      ));
++  }
+ }
+ 
+ /**
