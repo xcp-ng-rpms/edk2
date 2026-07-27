@@ -219,7 +219,7 @@ cp OvmfPkg/License.txt License.ovmf
 
 
 %changelog
-* Mon Jul 26 2026 yann.sionneau@vates.tech - 20220801-1.7.10.2
+* Mon Jul 27 2026 yann.sionneau@vates.tech - 20220801-1.7.10.2
 - Backport VbeShim removal from upstream to prevent
   vga shadow region (0xc0000) from being overwritten
 
