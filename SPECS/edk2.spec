@@ -21,7 +21,7 @@
 Name: edk2
 Summary: EFI Development Kit II
 Version: 20220801
-Release: %{?xsrel}.2%{?dist}
+Release: %{?xsrel}.3%{?dist}
 
 License: BSD and MIT
 URL: https://github.com/tianocore/edk2
@@ -105,6 +105,7 @@ Patch1002: 0001-OvmfPkg-XenPlatformPei-Allocate-more-memory-when-PEI.patch
 Patch1003: 0001-MdeModulePkg-Add-EdkiiPlatformLogoDisplayAttributeMi.patch
 # Patch to use the above
 Patch1004: 0002-Place-the-boot-logo-according-to-Microsoft-s-guideli.patch
+Patch1005: 0001-OvmfPkg-QemuVideoDxe-purge-VbeShim.patch
 
 %if 0%{?xenserver} < 9
 BuildRequires: devtoolset-11-binutils
@@ -230,6 +231,10 @@ cp OvmfPkg/License.txt License.ovmf
 
 
 %changelog
+* Mon Oct 05 2026 yann.sionneau@vates.tech - 20220801-1.7.11.3
+- Backport VbeShim removal from upstream to prevent
+  vga shadow region (0xc0000) from being overwritten
+
 * Fri Jul 17 2026 Tu Dinh <ngoc-tu.dinh@vates.tech> - 20220801-1.7.11.2
 - Add XCP-ng branding to the boot logo
 
