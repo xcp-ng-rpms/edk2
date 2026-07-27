@@ -96,6 +96,7 @@ Patch61: remove-vlan-tag-from-a-packet.patch
 # XCP-ng patches
 Patch1001: UefiCpuPkg-CpuMpPei-Workaround-page-table-allocation.patch
 Patch1002: 0001-OvmfPkg-XenPlatformPei-Allocate-more-memory-when-PEI.patch
+Patch1003: 0001-OvmfPkg-QemuVideoDxe-purge-VbeShim.patch
 
 %if 0%{?xenserver} < 9
 BuildRequires: devtoolset-11-binutils
@@ -218,6 +219,10 @@ cp OvmfPkg/License.txt License.ovmf
 
 
 %changelog
+* Mon Jul 27 2026 yann.sionneau@vates.tech - 20220801-1.7.10.2
+- Backport VbeShim removal from upstream to prevent
+  vga shadow region (0xc0000) from being overwritten
+
 * Wed Aug 06 2025 anthony.perard@vates.tech - 20220801-1.7.10.1
 - Sync with edk2-20220801-1.7.10
 - *** Upstream changelog ***
