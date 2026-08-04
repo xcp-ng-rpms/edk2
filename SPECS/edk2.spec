@@ -70,6 +70,8 @@ BuildRequires: devtoolset-11-binutils
 BuildRequires: devtoolset-11-gcc
 BuildRequires: devtoolset-11-gcc-c++
 %endif
+BuildRequires: gcc
+BuildRequires: g++
 BuildRequires: python3
 BuildRequires: libuuid-devel
 BuildRequires: nasm >= 2.15
