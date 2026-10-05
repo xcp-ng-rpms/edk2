@@ -65,19 +65,25 @@ Patch25: 0025-MdeModulePkg-Add-EdkiiPlatformLogoDisplayAttributeMi.patch
 # Patch to use the above
 Patch26: 0026-Place-the-boot-logo-according-to-Microsoft-s-guideli.patch
 
+# ARM patches
+Patch27: 0027-MdeModulePkg-DxeCore-Only-notify-varstored-of-SB-fai.patch
+
 BuildRequires: gcc
 BuildRequires: g++
 BuildRequires: python3
 BuildRequires: libuuid-devel
-BuildRequires: nasm >= 2.15
 BuildRequires: iasl
+%ifarch %{x86_64}
+BuildRequires: nasm >= 2.15
 BuildRequires: ipxe-efi
+%endif
 BuildRequires: perl(IPC::Cmd), perl(JSON), perl(FindBin), perl(lib), perl(ExtUtils::MakeMaker)
 %{?_cov_buildrequires}
 
 
 %description
-Provides the Open Virtual Machine Firmware (OVMF) built for x64.
+Provides the Open Virtual Machine Firmware (OVMF) built for x64, or the
+ArmVirtXen firmware (XEN_EFI.fd) built for aarch64.
 This is a build of the EFI Development Kit II suitable for using
 as firmware in a virtual machine.
 
@@ -114,6 +120,7 @@ cp %{SOURCE1001} MdeModulePkg/Logo/Logo.bmp
 
 python3 CryptoPkg/Library/OpensslLib/configure.py
 
+%ifarch %{x86_64}
 cp %{_datadir}/ipxe/10ec8139.efi .
 cp %{_datadir}/ipxe/8086100e.efi .
 
@@ -162,17 +169,45 @@ rm -rf Build/OvmfXen/DEBUG_GCC*
 
 cp Build/OvmfXen/DEBUG_GCC*/FV/OVMF.fd OVMF-release.fd
 python3 %{SOURCE1} Build/OvmfXen/DEBUG_GCC*/FV/PEIFV.Fv Build/OvmfXen/DEBUG_GCC*/FV/DXEFV.Fv > OVMF-release.pcrs
+%endif
+
+%ifarch %{arm64}
+# ArmVirtXen is loaded by the Xen toolstack like a Linux Image (direct kernel
+# boot). It uses the Xen PV console and PV block devices, and keeps its UEFI
+# variables in memory only.
+make -C BaseTools %{?_smp_flags}
+source ./edksetup.sh
+# Native build: no cross-compiler prefix
+export GCC5_AARCH64_PREFIX=
+
+%{?_cov_wrap} build -a AARCH64 -t GCC5 -b DEBUG \
+    -p ArmVirtPkg/ArmVirtXen.dsc -n %{_smp_build_ncpus}
+cp Build/ArmVirtXen-AARCH64/DEBUG_GCC5/FV/XEN_EFI.fd XEN_EFI-debug.fd
+
+%{?_cov_wrap} build -a AARCH64 -t GCC5 -b RELEASE \
+    -p ArmVirtPkg/ArmVirtXen.dsc -n %{_smp_build_ncpus}
+cp Build/ArmVirtXen-AARCH64/RELEASE_GCC5/FV/XEN_EFI.fd XEN_EFI-release.fd
+%endif
 
 
 %install
 
 install -m 755 -d %{buildroot}/%{_datadir}/%{name}
+
+%ifarch %{x86_64}
 install -m 644 OVMF-debug.fd %{buildroot}/%{_datadir}/%{name}/OVMF-debug.fd
 install -m 644 OVMF-release.fd %{buildroot}/%{_datadir}/%{name}/OVMF-release.fd
 ln -sf OVMF-release.fd %{buildroot}/%{_datadir}/%{name}/OVMF.fd
 
 install -m 644 OVMF-debug.pcrs %{buildroot}/%{_datadir}/%{name}/OVMF-debug.pcrs
 install -m 644 OVMF-release.pcrs %{buildroot}/%{_datadir}/%{name}/OVMF-release.pcrs
+%endif
+
+%ifarch %{arm64}
+install -m 644 XEN_EFI-debug.fd %{buildroot}/%{_datadir}/%{name}/XEN_EFI-debug.fd
+install -m 644 XEN_EFI-release.fd %{buildroot}/%{_datadir}/%{name}/XEN_EFI-release.fd
+ln -sf XEN_EFI-release.fd %{buildroot}/%{_datadir}/%{name}/XEN_EFI.fd
+%endif
 
 cp OvmfPkg/License.txt License.ovmf
 # cp CryptoPkg/Library/OpensslLib/openssl-xs/LICENSE LICENSE.openssl

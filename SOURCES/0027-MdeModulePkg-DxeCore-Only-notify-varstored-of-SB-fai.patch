@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Julian Vetter <julian.vetter@vates.tech>
+Date: Mon, 5 Oct 2026 15:35:16 +0200
+Subject: [PATCH] MdeModulePkg/DxeCore: Only notify varstored of SB failures on
+ x86
+
+The add-xen-variable patch makes CoreLoadImageCommon() notify varstored
+of Secure Boot failures. The notification is sent through
+XenVariableLib's exec_command(), which uses IoWrite32() to an x86 I/O
+port. AArch64 has no port I/O, so any AArch64 platform that links
+DxeCore, such as ArmVirtXen, fails to build:
+
+  XenVariableLib.h:136: undefined reference to `IoWrite32'
+
+varstored only exists for x86 HVM guests anyway. Restrict
+XenNotifySecureBootFailure() and its call site to IA32 and X64.
+
+Signed-off-by: Julian Vetter <julian.vetter@vates.tech>
+
+diff --git a/MdeModulePkg/Core/Dxe/Image/Image.c b/MdeModulePkg/Core/Dxe/Image/Image.c
+index ea32e6236ef6..e5d321e4c01e 100644
+--- a/MdeModulePkg/Core/Dxe/Image/Image.c
++++ b/MdeModulePkg/Core/Dxe/Image/Image.c
+@@ -1091,6 +1091,7 @@ CoreUnloadAndCloseImage (
+   CoreFreePool (Image);
+ }
+ 
++#if defined (MDE_CPU_IA32) || defined (MDE_CPU_X64)
+ STATIC
+ EFI_STATUS
+ XenNotifySecureBootFailure (
+@@ -1118,6 +1119,7 @@ XenNotifySecureBootFailure (
+ 
+   return status;
+ }
++#endif
+ 
+ /**
+   Loads an EFI image into memory and returns a handle to the image.
+@@ -1339,6 +1341,7 @@ CoreLoadImageCommon (
+                                   );
+   }
+ 
++#if defined (MDE_CPU_IA32) || defined (MDE_CPU_X64)
+   if (SecurityStatus == EFI_SECURITY_VIOLATION || SecurityStatus == EFI_ACCESS_DENIED) {
+     EFI_STATUS NotifyStatus = XenNotifySecureBootFailure ();
+ 
+@@ -1346,6 +1349,7 @@ CoreLoadImageCommon (
+       DEBUG ((DEBUG_INFO, "XenNotifySecureBootFailure failed: %r\n",
+               NotifyStatus));
+   }
++#endif
+ 
+   //
+   // Check Security Status.
