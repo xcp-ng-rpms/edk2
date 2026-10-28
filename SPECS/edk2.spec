@@ -21,7 +21,7 @@
 Name: edk2
 Summary: EFI Development Kit II
 Version: 20220801
-Release: %{?xsrel}.2%{?dist}
+Release: %{?xsrel}.3%{?dist}
 
 License: BSD and MIT
 URL: https://github.com/tianocore/edk2
@@ -105,6 +105,15 @@ Patch1002: 0001-OvmfPkg-XenPlatformPei-Allocate-more-memory-when-PEI.patch
 Patch1003: 0001-MdeModulePkg-Add-EdkiiPlatformLogoDisplayAttributeMi.patch
 # Patch to use the above
 Patch1004: 0002-Place-the-boot-logo-according-to-Microsoft-s-guideli.patch
+
+# CVE-2024-38797
+Patch1005: 0001-SecurityPkg-Out-of-bound-read-in-HashPeImageByType.patch
+Patch1006: 0002-SecurityPkg-Improving-HashPeImageByType-logic.patch
+Patch1007: 0003-SecurityPkg-Improving-SecureBootConfigImpl-HashPeIma.patch
+
+# CVE-2026-97631
+Patch1008: 0004-NetworkPkg-UefiPxeBcDxe-Fix-ICMP-buffer-overflow-in-.patch
+Patch1009: 0005-NetworkPkg-UefiPxeBcDxe-Clear-ICMP-error-buffer-befo.patch
 
 %if 0%{?xenserver} < 9
 BuildRequires: devtoolset-11-binutils
@@ -230,6 +239,10 @@ cp OvmfPkg/License.txt License.ovmf
 
 
 %changelog
+* Wed Oct 28 2026 Tu Dinh <ngoc-tu.dinh@vates.tech> - 20220801-1.7.11.3
+- Fix CVE-2024-38797
+- Fix CVE-2026-97631
+
 * Fri Jul 17 2026 Tu Dinh <ngoc-tu.dinh@vates.tech> - 20220801-1.7.11.2
 - Add XCP-ng branding to the boot logo
 
