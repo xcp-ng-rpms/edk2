@@ -1,0 +1,41 @@
+From 428cd8a46fb3bd8468183e2ac30bbbee2c25689b Mon Sep 17 00:00:00 2001
+From: "INDIA\\sachinganesh" <sachinganesh@ami.com>
+Date: Tue, 28 Jan 2025 15:47:03 +0530
+Subject: [PATCH] MdePkg: Fix Clang Build Error
+
+Fixed Clang build error introduced by unintialized variables in
+https://github.com/tianocore/edk2/commit/6278bbb89822c598fcd0637ae74174e367895c84
+
+Signed-off-by: Sachin Ganesh <sachinganesh@ami.com>
+---
+ MdePkg/Library/BasePeCoffLib/BasePeCoff.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/MdePkg/Library/BasePeCoffLib/BasePeCoff.c b/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
+index ccb963407e..92285dfd05 100644
+--- a/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
++++ b/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
+@@ -1056,6 +1056,8 @@ PeCoffLoaderRelocateImage (
+     RelocDir = &Hdr.Te->DataDirectory[0];
+   }
+ 
++  RelocBase    = NULL;
++  RelocBaseEnd = NULL;
+   if ((RelocDir != NULL) && (RelocDir->Size > 0)) {
+     Status = SafeUint32Add (RelocDir->VirtualAddress, (RelocDir->Size - 1), &EndAddress);
+     if (!RETURN_ERROR (Status)) {
+@@ -1072,11 +1074,6 @@ PeCoffLoaderRelocateImage (
+       DEBUG ((DEBUG_ERROR, "Relocation block is not valid\n"));
+       return RETURN_LOAD_ERROR;
+     }
+-  } else {
+-    //
+-    // Set base and end to bypass processing below.
+-    //
+-    RelocBase = RelocBaseEnd = NULL;
+   }
+ 
+   RelocBaseOrg = RelocBase;
+-- 
+2.53.0
+

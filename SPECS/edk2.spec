@@ -1,6 +1,6 @@
-%global package_speccommit 5becf7339597f06332f0524b530da54364d77d58
+%global package_speccommit ef3dbccadba672354c14b547dd12bf471cecb190
 %global usver 20220801
-%global xsver 1.7.11
+%global xsver 1.7.13
 %global xsrel %{xsver}%{?xscount}%{?xshash}
 %global package_srccommit edk2-stable202208
 %global debug_package %{nil}
@@ -31,69 +31,88 @@ Source2: openssl-3.0.9.tar.gz
 Source3: brotli-basetools-f4153a09f87cbb9c826d8fc12c74642bb2d879ea.tar.gz
 Source4: brotli-lib-f4153a09f87cbb9c826d8fc12c74642bb2d879ea.tar.gz
 Patch0: 0001-Avoid-type-errors-in-EAI-related-name-check-logic.patch
-Patch1: 0001-tools_def-add-fno-omit-frame-pointer-to-GCC48_-IA32-.patch
-Patch2: 0001-BaseTools-Update-Tests-TestTools.py-to-allow-it-to-w.patch
-Patch3: 0001-MdePkg-Rng-Add-GUID-to-describe-Arm-Rndr-Rng-algorit.patch
-Patch4: 0001-NetworkPkg-Dhcp6Dxe-SECURITY-PATCH-CVE-2023-45230-Pa.patch
-Patch5: 0003-NetworkPkg-Dhcp6Dxe-SECURITY-PATCH-CVE-2023-45229-Pa.patch
-Patch6: 0005-NetworkPkg-Ip6Dxe-SECURITY-PATCH-CVE-2023-45231-Patc.patch
-Patch7: 0007-NetworkPkg-Ip6Dxe-SECURITY-PATCH-CVE-2023-45232-Patc.patch
-Patch8: 0009-NetworkPkg-UefiPxeBcDxe-SECURITY-PATCH-CVE-2023-4523.patch
-Patch9: 0011-NetworkPkg-UefiPxeBcDxe-SECURITY-PATCH-CVE-2023-4523.patch
-Patch10: 0001-NetworkPkg-Dhcp6Dxe-SECURITY-PATCH-CVE-2023-45229-Re.patch
-Patch11: 0002-NetworkPkg-Dhcp6Dxe-Removes-duplicate-check-and-repl.patch
-Patch12: 0003-NetworkPkg-Dhcp6Dxe-Packet-Length-is-not-updated-bef.patch
-Patch13: 0001-EmulatorPkg-Add-RngDxe-to-EmulatorPkg.patch
-Patch14: 0002-EmulatorPkg-Add-Hash2DxeCrypto-to-EmulatorPkg.patch
-Patch15: 0004-OvmfPkg-Add-Hash2DxeCrypto-to-OvmfPkg.patch
-Patch16: 0005-SecurityPkg-RngDxe-Remove-incorrect-limitation-on-Ge.patch
-Patch17: 0006-NetworkPkg-SECURITY-PATCH-CVE-2023-45237.patch
-Patch18: 0007-NetworkPkg-TcpDxe-SECURITY-PATCH-CVE-2023-45236.patch
-Patch19: 0008-NetworkPkg-TcpDxe-Fixed-system-stuck-on-PXE-boot-flo.patch
-Patch20: OvmfPkg-XenPvBlkDxe-Update-disk-size-calculation.patch
-Patch21: OvmfPkg-XenPvBlkDxe-Advertise-the-correct-IO-alignme.patch
-Patch22: 0001-CryptoPkg-openssl-cleanup-all-openssl1.1.1-generated.patch
-Patch23: 0002-CryptoPkg-openssl-add-openssl3-configure-scripts.patch
-Patch24: 0003-CryptoPkg-remove-BN-and-EC-accel-for-size-optimizati.patch
-Patch25: 0004-CryptoPkg-OpensslLib-Add-native-instruction-support-.patch
-Patch26: 0005-CryptoPkg-openssl-UefiAsm.conf-update-for-openssl-3..patch
-Patch27: 0006-CryptoPkg-openssl-move-compiler_flags-to-buildinf.c.patch
-Patch28: 0007-CryptoPkg-openssl-store-dummy-update-for-openssl-3.0.patch
-Patch29: 0008-CryptoPkg-openssl-adapt-rand_pool.c-to-openssl-3.0-c.patch
-Patch30: 0009-CryptoPkg-Library-OpensslLib-Produce-consistent-set-.patch
-Patch31: 0010-CryptoPkg-openssl-adapt-EcSm2Null.c-for-openssl-3.0.patch
-Patch32: 0011-CryptoPkg-Move-all-UEFI-implement-of-openssl-to-Open.patch
-Patch33: 0012-CryptoPkg-adapt-3.0-change-in-SslNull.c.patch
-Patch34: 0013-CryptoPkg-use-UEFI-provider-as-default.patch
-Patch35: 0014-CryptoPkg-add-more-dummy-implement-of-openssl-for-si.patch
-Patch36: 0015-CryptoPkg-openssl-update-Openssl-.inf-files-for-open.patch
-Patch37: 0016-CryptoPkg-BaseCryptLib-adapt-CryptSm3.c-to-openssl-3.patch
-Patch38: 0017-CryptoPkg-BaseCryptLib-drop-BIO_-dummy-functions.patch
-Patch39: ovmfpkg-xenpvblkdxe__fix_memory_barrier_macro.patch
-Patch40: ovmfxen-add-tpm-support.patch
-Patch41: MdePkg-SecPeiDxeTimerLibCpu-Support-for-dynamic-PcdF.patch
-Patch42: OvmfPkg-OvmfXen-Use-RuntimeTimerLibCpu-for-DXE_DRIVER.patch
-Patch43: add-option-to-disable-bgrt.patch
-Patch44: use-rtc.patch
-Patch45: move-xenconnect-later.patch
-Patch46: xen-rng-dxe.patch
-Patch47: nvidia-vgpu-support.patch
-Patch48: gvt-g-support.patch
-Patch49: embed-nic-drivers.patch
-Patch50: add-xen-variable.patch
-Patch51: add-xen-platform-device-id.patch
-Patch52: disable-modules.patch
-Patch53: xenorder.patch
-Patch54: keep-caching-enabled.patch
-Patch55: remove-unused-crypto.patch
-Patch56: add-Tcg2PhysicalPresenceLibXen.patch
-Patch57: tcg2config-fix-operation-parameter-prompt.patch
-Patch58: set-tpm2-acpi-table-revision.patch
-Patch59: disable-config-option-in-TCG2-config-screen.patch
-Patch60: shadow-pei-for-consistent-measurements.patch
-Patch61: set-default-resolution-1024-768.patch
-Patch62: add-debugging-info.patch
-Patch63: remove-vlan-tag-from-a-packet.patch
+Patch1: 0001-Fix-possible-use-after-free-in-OpenSSL-PKCS7_verify.patch
+Patch2: 0001-tools_def-add-fno-omit-frame-pointer-to-GCC48_-IA32-.patch
+Patch3: 0001-BaseTools-Update-Tests-TestTools.py-to-allow-it-to-w.patch
+Patch4: 0001-MdePkg-Rng-Add-GUID-to-describe-Arm-Rndr-Rng-algorit.patch
+Patch5: 0001-NetworkPkg-Dhcp6Dxe-SECURITY-PATCH-CVE-2023-45230-Pa.patch
+Patch6: 0003-NetworkPkg-Dhcp6Dxe-SECURITY-PATCH-CVE-2023-45229-Pa.patch
+Patch7: 0005-NetworkPkg-Ip6Dxe-SECURITY-PATCH-CVE-2023-45231-Patc.patch
+Patch8: 0007-NetworkPkg-Ip6Dxe-SECURITY-PATCH-CVE-2023-45232-Patc.patch
+Patch9: 0009-NetworkPkg-UefiPxeBcDxe-SECURITY-PATCH-CVE-2023-4523.patch
+Patch10: 0011-NetworkPkg-UefiPxeBcDxe-SECURITY-PATCH-CVE-2023-4523.patch
+Patch11: 0001-NetworkPkg-Dhcp6Dxe-SECURITY-PATCH-CVE-2023-45229-Re.patch
+Patch12: 0002-NetworkPkg-Dhcp6Dxe-Removes-duplicate-check-and-repl.patch
+Patch13: 0003-NetworkPkg-Dhcp6Dxe-Packet-Length-is-not-updated-bef.patch
+Patch14: 0001-EmulatorPkg-Add-RngDxe-to-EmulatorPkg.patch
+Patch15: 0002-EmulatorPkg-Add-Hash2DxeCrypto-to-EmulatorPkg.patch
+Patch16: 0004-OvmfPkg-Add-Hash2DxeCrypto-to-OvmfPkg.patch
+Patch17: 0005-SecurityPkg-RngDxe-Remove-incorrect-limitation-on-Ge.patch
+Patch18: 0006-NetworkPkg-SECURITY-PATCH-CVE-2023-45237.patch
+Patch19: 0007-NetworkPkg-TcpDxe-SECURITY-PATCH-CVE-2023-45236.patch
+Patch20: 0008-NetworkPkg-TcpDxe-Fixed-system-stuck-on-PXE-boot-flo.patch
+Patch21: OvmfPkg-XenPvBlkDxe-Update-disk-size-calculation.patch
+Patch22: OvmfPkg-XenPvBlkDxe-Advertise-the-correct-IO-alignme.patch
+Patch23: 0001-SecurityPkg-DxeTpm2MeasureBootLib-SECURITY-PATCH-411.patch
+Patch24: 0002-SecurityPkg-DxeTpm2MeasureBootLib-SECURITY-PATCH-411.patch
+Patch25: 0003-SecurityPkg-DxeTpm2MeasureBootLib-SECURITY-PATCH-411.patch
+Patch26: 0001-SecurityPkg-DxeImageVerificationLib-Check-result-of-.patch
+Patch27: 0002-SecurityPkg-Out-of-bound-read-in-HashPeImageByType.patch
+Patch28: 0003-SecurityPkg-Improving-HashPeImageByType-logic.patch
+Patch29: 0004-SecurityPkg-Improving-SecureBootConfigImpl-HashPeIma.patch
+Patch30: 0005-MdePkg-Fix-overflow-issue-in-BasePeCoffLib.patch
+Patch31: 0006-MdePkg-Improving-readability-of-CVE-patch-for-PeCoff.patch
+Patch32: 0007-MdePkg-Fix-overflow-issue-in-PeCoffLoaderRelocateIma.patch
+Patch33: 0008-MdePkg-Use-SafeIntLib-to-handle-overflow.patch
+Patch34: 0009-MdePkg-Fix-Clang-Build-Error.patch
+Patch35: 0010-MdePkg-BasePeCoffLib-Remove-DEBUG-statements-from-ru.patch
+Patch36: 0001-CryptoPkg-openssl-cleanup-all-openssl1.1.1-generated.patch
+Patch37: 0002-CryptoPkg-openssl-add-openssl3-configure-scripts.patch
+Patch38: 0003-CryptoPkg-remove-BN-and-EC-accel-for-size-optimizati.patch
+Patch39: 0004-CryptoPkg-OpensslLib-Add-native-instruction-support-.patch
+Patch40: 0005-CryptoPkg-openssl-UefiAsm.conf-update-for-openssl-3..patch
+Patch41: 0006-CryptoPkg-openssl-move-compiler_flags-to-buildinf.c.patch
+Patch42: 0007-CryptoPkg-openssl-store-dummy-update-for-openssl-3.0.patch
+Patch43: 0008-CryptoPkg-openssl-adapt-rand_pool.c-to-openssl-3.0-c.patch
+Patch44: 0009-CryptoPkg-Library-OpensslLib-Produce-consistent-set-.patch
+Patch45: 0010-CryptoPkg-openssl-adapt-EcSm2Null.c-for-openssl-3.0.patch
+Patch46: 0011-CryptoPkg-Move-all-UEFI-implement-of-openssl-to-Open.patch
+Patch47: 0012-CryptoPkg-adapt-3.0-change-in-SslNull.c.patch
+Patch48: 0013-CryptoPkg-use-UEFI-provider-as-default.patch
+Patch49: 0014-CryptoPkg-add-more-dummy-implement-of-openssl-for-si.patch
+Patch50: 0015-CryptoPkg-openssl-update-Openssl-.inf-files-for-open.patch
+Patch51: 0016-CryptoPkg-BaseCryptLib-adapt-CryptSm3.c-to-openssl-3.patch
+Patch52: 0017-CryptoPkg-BaseCryptLib-drop-BIO_-dummy-functions.patch
+Patch53: 0001-NetworkPkg-UefiPxeBcDxe-Fix-ICMP-buffer-overflow-in-.patch
+Patch54: 0002-NetworkPkg-UefiPxeBcDxe-Clear-ICMP-error-buffer-befo.patch
+Patch55: ovmfpkg-xenpvblkdxe__fix_memory_barrier_macro.patch
+Patch56: ovmfxen-add-tpm-support.patch
+Patch57: MdePkg-SecPeiDxeTimerLibCpu-Support-for-dynamic-PcdF.patch
+Patch58: OvmfPkg-OvmfXen-Use-RuntimeTimerLibCpu-for-DXE_DRIVER.patch
+Patch59: add-option-to-disable-bgrt.patch
+Patch60: use-rtc.patch
+Patch61: move-xenconnect-later.patch
+Patch62: xen-rng-dxe.patch
+Patch63: nvidia-vgpu-support.patch
+Patch64: gvt-g-support.patch
+Patch65: embed-nic-drivers.patch
+Patch66: add-xen-variable.patch
+Patch67: add-xen-platform-device-id.patch
+Patch68: disable-modules.patch
+Patch69: xenorder.patch
+Patch70: keep-caching-enabled.patch
+Patch71: remove-unused-crypto.patch
+Patch72: add-Tcg2PhysicalPresenceLibXen.patch
+Patch73: tcg2config-fix-operation-parameter-prompt.patch
+Patch74: set-tpm2-acpi-table-revision.patch
+Patch75: disable-config-option-in-TCG2-config-screen.patch
+Patch76: shadow-pei-for-consistent-measurements.patch
+Patch77: set-default-resolution-1024-768.patch
+Patch78: add-debugging-info.patch
+Patch79: remove-vlan-tag-from-a-packet.patch
+Patch80: xen-event-channel.patch
+Patch81: xenstore-lib.patch
+Patch82: network-boot-protocol-toggle.patch
 
 # XCP-ng branding
 Source1001: Logo.bmp
@@ -105,15 +124,6 @@ Patch1002: 0001-OvmfPkg-XenPlatformPei-Allocate-more-memory-when-PEI.patch
 Patch1003: 0001-MdeModulePkg-Add-EdkiiPlatformLogoDisplayAttributeMi.patch
 # Patch to use the above
 Patch1004: 0002-Place-the-boot-logo-according-to-Microsoft-s-guideli.patch
-
-# CVE-2024-38797
-Patch1005: 0001-SecurityPkg-Out-of-bound-read-in-HashPeImageByType.patch
-Patch1006: 0002-SecurityPkg-Improving-HashPeImageByType-logic.patch
-Patch1007: 0003-SecurityPkg-Improving-SecureBootConfigImpl-HashPeIma.patch
-
-# CVE-2026-97631
-Patch1008: 0004-NetworkPkg-UefiPxeBcDxe-Fix-ICMP-buffer-overflow-in-.patch
-Patch1009: 0005-NetworkPkg-UefiPxeBcDxe-Clear-ICMP-error-buffer-befo.patch
 
 %if 0%{?xenserver} < 9
 BuildRequires: devtoolset-11-binutils
@@ -239,6 +249,20 @@ cp OvmfPkg/License.txt License.ovmf
 
 
 %changelog
+#* next
+#- Sync with edk2-20220801-1.7.13
+#- *** Upstream changelog ***
+#  * Thu Oct 29 2026 Alex Brett <alex.brett@citrix.com> - 20220801-1.7.13
+#  - CA-432843: Fix vulnerabilities
+#  - Fix CVE-2026-45447 - OpenSSL PKCS7_verify() use-after-free
+#  - Fix CVE-2022-36763,CVE-2022-36764 - heap overflows in DxeTpm2MeasureBootLib
+#  - Fix CVE-2019-14560 - DxeImageVerificationHandler failing open on GetVariable errors
+#  - Fix CVE-2024-38797 - out-of-bounds read in HashPeImageByType()
+#  - Fix CVE-2024-38796 - integer overflows in PeCoffLoaderRelocateImage()
+#  * Wed Oct 28 2026 Ross Lagerwall <ross.lagerwall@citrix.com> - 20220801-1.7.12
+#  - CP-314149: Read XenStore to disable PXE DHCP boot protocols
+#  - CA-432807: Fix CVE-2026-97631 - pre-boot RCE in networking stack
+
 * Wed Oct 28 2026 Tu Dinh <ngoc-tu.dinh@vates.tech> - 20220801-1.7.11.3
 - Fix CVE-2024-38797
 - Fix CVE-2026-97631

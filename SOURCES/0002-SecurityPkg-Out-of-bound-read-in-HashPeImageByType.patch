@@ -1,4 +1,4 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 5f08635ee7c176f78f788aa6528b43f18536a80b Mon Sep 17 00:00:00 2001
 From: Doug Flick <dougflick@microsoft.com>
 Date: Thu, 3 Oct 2024 09:37:18 -0700
 Subject: [PATCH] SecurityPkg: Out of bound read in HashPeImageByType()
@@ -37,10 +37,12 @@ verified image is booting fine.
 
 Authored-by: Raj AlwinX Selvaraj <Alw...@intel.com>
 Signed-off-by: Doug Flick <DougFlick@microsoft.com>
-(cherry picked from commit 5f08635ee7c176f78f788aa6528b43f18536a80b)
+---
+ .../Library/DxeImageVerificationLib/DxeImageVerificationLib.c   | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/SecurityPkg/Library/DxeImageVerificationLib/DxeImageVerificationLib.c b/SecurityPkg/Library/DxeImageVerificationLib/DxeImageVerificationLib.c
-index 66e2f5eaa3c0..bff0427320d3 100644
+index b05da19c2b..2afa2c93d9 100644
 --- a/SecurityPkg/Library/DxeImageVerificationLib/DxeImageVerificationLib.c
 +++ b/SecurityPkg/Library/DxeImageVerificationLib/DxeImageVerificationLib.c
 @@ -642,7 +642,7 @@ HashPeImageByType (
@@ -52,3 +54,6 @@ index 66e2f5eaa3c0..bff0427320d3 100644
        //
        // Only support two bytes of Long Form of Length Encoding.
        //
+-- 
+2.53.0
+
