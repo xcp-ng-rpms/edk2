@@ -25,7 +25,7 @@
 Name: edk2
 Summary: EFI Development Kit II
 Version: 20220801
-Release: %{?xsrel}.3%{?dist}
+Release: %{?xsrel}.1%{?dist}
 
 License: BSD and MIT
 URL: https://github.com/tianocore/edk2
@@ -256,20 +256,20 @@ cp OvmfPkg/License.txt License.ovmf
 
 
 %changelog
-#* next
-#- Sync with edk2-20220801-1.7.13
-#- Update to Brotli v1.1.1
-#- *** Upstream changelog ***
-#  * Thu Oct 29 2026 Alex Brett <alex.brett@citrix.com> - 20220801-1.7.13
-#  - CA-432843: Fix vulnerabilities
-#  - Fix CVE-2026-45447 - OpenSSL PKCS7_verify() use-after-free
-#  - Fix CVE-2022-36763,CVE-2022-36764 - heap overflows in DxeTpm2MeasureBootLib
-#  - Fix CVE-2019-14560 - DxeImageVerificationHandler failing open on GetVariable errors
-#  - Fix CVE-2024-38797 - out-of-bounds read in HashPeImageByType()
-#  - Fix CVE-2024-38796 - integer overflows in PeCoffLoaderRelocateImage()
-#  * Wed Oct 28 2026 Ross Lagerwall <ross.lagerwall@citrix.com> - 20220801-1.7.12
-#  - CP-314149: Read XenStore to disable PXE DHCP boot protocols
-#  - CA-432807: Fix CVE-2026-97631 - pre-boot RCE in networking stack
+* Tue Nov 03 2026 Tu Dinh <ngoc-tu.dinh@vates.tech> - 20220801-1.7.13.1
+- Sync with edk2-20220801-1.7.13
+- Update to Brotli v1.1.1
+- *** Upstream changelog ***
+  * Thu Oct 29 2026 Alex Brett <alex.brett@citrix.com> - 20220801-1.7.13
+  - CA-432843: Fix vulnerabilities
+  - Fix CVE-2026-45447 - OpenSSL PKCS7_verify() use-after-free
+  - Fix CVE-2022-36763,CVE-2022-36764 - heap overflows in DxeTpm2MeasureBootLib
+  - Fix CVE-2019-14560 - DxeImageVerificationHandler failing open on GetVariable errors
+  - Fix CVE-2024-38797 - out-of-bounds read in HashPeImageByType()
+  - Fix CVE-2024-38796 - integer overflows in PeCoffLoaderRelocateImage()
+  * Wed Oct 28 2026 Ross Lagerwall <ross.lagerwall@citrix.com> - 20220801-1.7.12
+  - CP-314149: Read XenStore to disable PXE DHCP boot protocols
+  - CA-432807: Fix CVE-2026-97631 - pre-boot RCE in networking stack
 
 * Wed Oct 28 2026 Tu Dinh <ngoc-tu.dinh@vates.tech> - 20220801-1.7.11.3
 - Fix CVE-2024-38797
