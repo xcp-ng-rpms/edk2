@@ -25,7 +25,7 @@
 Name: edk2
 Summary: EFI Development Kit II
 Version: 20220801
-Release: %{?xsrel}.1%{?dist}
+Release: %{?xsrel}.1~dnt4029.1%{?dist}
 
 License: BSD and MIT
 URL: https://github.com/tianocore/edk2
