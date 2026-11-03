@@ -1,0 +1,365 @@
+diff --git a/OvmfPkg/Include/Library/XenEventChannelLib.h b/OvmfPkg/Include/Library/XenEventChannelLib.h
+new file mode 100644
+index 000000000000..f9d326013ba7
+--- /dev/null
++++ b/OvmfPkg/Include/Library/XenEventChannelLib.h
+@@ -0,0 +1,61 @@
++/** @file
++  Event Channel function declaration.
++
++  Copyright (C) 2005 Rusty Russell, IBM Corporation
++  Copyright (C) 2009,2010 Spectra Logic Corporation
++  Copyright (C) 2014, Citrix Ltd.
++  Copyright (C) 2026, Citrix Ltd.
++
++  This file may be distributed separately from the Linux kernel, or
++  incorporated into other software packages, subject to the following license:
++
++  SPDX-License-Identifier: BSD-2-Clause-Patent
++**/
++
++#ifndef __XEN_EVENT_CHANNEL_H
++#define __XEN_EVENT_CHANNEL_H
++
++#include <IndustryStandard/Xen/event_channel.h>
++
++/**
++  Send an event to the remote end of the channel whose local endpoint is Port.
++
++  @param Port   The port to notify.
++
++  @return       Return 0 on success, or return the errno code from the hypercall.
++**/
++UINT32
++XenEventChannelNotify (
++  IN evtchn_port_t  Port
++  );
++
++/**
++  Allocate a port that can be bind from domain DomainId.
++
++  @param DomainId   The domain ID that can bind the newly allocated port.
++  @param Port       A pointer to a evtchn_port_t that will contain the newly
++                    allocated port.
++
++  @retval UINT32    The return value from the hypercall, 0 if success.
++**/
++UINT32
++EFIAPI
++XenEventChannelAllocate (
++  IN  domid_t          DomainId,
++  OUT evtchn_port_t    *Port
++  );
++
++/**
++  Close a local event channel Port.
++
++  @param Port       The event channel to close.
++
++  @retval UINT32    The return value from the hypercall, 0 if success.
++**/
++UINT32
++EFIAPI
++XenEventChannelClose (
++  IN evtchn_port_t    Port
++  );
++
++#endif  // __XEN_EVENT_CHANNEL_H
+diff --git a/OvmfPkg/Library/XenEventChannelLib/XenEventChannelLib.c b/OvmfPkg/Library/XenEventChannelLib/XenEventChannelLib.c
+new file mode 100644
+index 000000000000..1ef1b41fc989
+--- /dev/null
++++ b/OvmfPkg/Library/XenEventChannelLib/XenEventChannelLib.c
+@@ -0,0 +1,73 @@
++/** @file
++  Xen Event Channel.
++
++  Copyright (C) 2005 Rusty Russell, IBM Corporation
++  Copyright (C) 2009,2010 Spectra Logic Corporation
++  Copyright (C) 2014, Citrix Ltd.
++  Copyright (C) 2026, Citrix Ltd.
++
++  This file may be distributed separately from the Linux kernel, or
++  incorporated into other software packages, subject to the following license:
++
++  SPDX-License-Identifier: BSD-2-Clause-Patent
++
++**/
++
++#include <Library/BaseLib.h>
++#include <Library/DebugLib.h>
++
++#include <Library/XenEventChannelLib.h>
++#include <Library/XenHypercallLib.h>
++
++#include <IndustryStandard/Xen/event_channel.h>
++
++UINT32
++XenEventChannelNotify (
++  IN evtchn_port_t  Port
++  )
++{
++  INTN           ReturnCode;
++  evtchn_send_t  Send;
++
++  Send.port  = Port;
++  ReturnCode = XenHypercallEventChannelOp (EVTCHNOP_send, &Send);
++  return (UINT32)ReturnCode;
++}
++
++UINT32
++EFIAPI
++XenEventChannelAllocate (
++  IN  domid_t          DomainId,
++  OUT evtchn_port_t    *Port
++  )
++{
++  evtchn_alloc_unbound_t  Parameter;
++  UINT32                  ReturnCode;
++
++  Parameter.dom        = DOMID_SELF;
++  Parameter.remote_dom = DomainId;
++  ReturnCode           = (UINT32)XenHypercallEventChannelOp (
++                                   EVTCHNOP_alloc_unbound,
++                                   &Parameter
++                                   );
++
++  if (ReturnCode != 0) {
++    DEBUG ((DEBUG_ERROR, "ERROR: alloc_unbound failed with rc=%d", ReturnCode));
++    return ReturnCode;
++  }
++
++  *Port = Parameter.port;
++  return ReturnCode;
++}
++
++UINT32
++EFIAPI
++XenEventChannelClose (
++  IN evtchn_port_t    Port
++  )
++{
++  evtchn_close_t  Close;
++
++  Close.port = Port;
++  return (UINT32)XenHypercallEventChannelOp (EVTCHNOP_close, &Close);
++}
+diff --git a/OvmfPkg/Library/XenEventChannelLib/XenEventChannelLib.inf b/OvmfPkg/Library/XenEventChannelLib/XenEventChannelLib.inf
+new file mode 100644
+index 000000000000..f5cb5dc6c3c2
+--- /dev/null
++++ b/OvmfPkg/Library/XenEventChannelLib/XenEventChannelLib.inf
+@@ -0,0 +1,34 @@
++## @file
++#  Xen Event Channels
++#
++#  Copyright (C) 2005 Rusty Russell, IBM Corporation
++#  Copyright (C) 2009,2010 Spectra Logic Corporation
++#  Copyright (C) 2014, Citrix Ltd.
++#  Copyright (C) 2026, Citrix Ltd.
++#
++#  This file may be distributed separately from the Linux kernel, or
++#  incorporated into other software packages, subject to the following license:
++#
++#  SPDX-License-Identifier: BSD-2-Clause-Patent
++#
++##
++
++[Defines]
++  INF_VERSION                    = 0x00010005
++  BASE_NAME                      = XenEventChannelLib
++  FILE_GUID                      = 803c2a12-65a9-4a00-876d-1b88a15194e6
++  MODULE_TYPE                    = BASE
++  VERSION_STRING                 = 1.0
++  LIBRARY_CLASS                  = XenEventChannelLib
++
++[Sources]
++  XenEventChannelLib.c
++
++[Packages]
++  MdePkg/MdePkg.dec
++  OvmfPkg/OvmfPkg.dec
++
++[LibraryClasses]
++  BaseLib
++  DebugLib
++  XenHypercallLib
+diff --git a/OvmfPkg/OvmfPkg.dec b/OvmfPkg/OvmfPkg.dec
+index fb717f05068a..cd122c45d7ac 100644
+--- a/OvmfPkg/OvmfPkg.dec
++++ b/OvmfPkg/OvmfPkg.dec
+@@ -109,6 +109,10 @@
+   #
+   XenHypercallLib|Include/Library/XenHypercallLib.h
+ 
++  ##  @libraryclass  Provide Xen Event Channels
++  #
++  XenEventChannelLib|Include/Library/XenEventChannelLib.h
++
+   ##  @libraryclass  Manage XenBus device path and I/O handles
+   #
+   XenIoMmioLib|Include/Library/XenIoMmioLib.h
+diff --git a/OvmfPkg/OvmfXen.dsc b/OvmfPkg/OvmfXen.dsc
+index 71a38bbf65cb..4500a09da46d 100644
+--- a/OvmfPkg/OvmfXen.dsc
++++ b/OvmfPkg/OvmfXen.dsc
+@@ -228,6 +228,7 @@
+   XenHypercallLib|OvmfPkg/Library/XenHypercallLib/XenHypercallLib.inf
+   XenPlatformLib|OvmfPkg/Library/XenPlatformLib/XenPlatformLib.inf
+   XenIoMmioLib|OvmfPkg/Library/XenIoMmioLib/XenIoMmioLib.inf
++  XenEventChannelLib|OvmfPkg/Library/XenEventChannelLib/XenEventChannelLib.inf
+ 
+   TimeBaseLib|EmbeddedPkg/Library/TimeBaseLib/TimeBaseLib.inf
+ !ifdef $(DEBUG_ON_HYPERVISOR_CONSOLE)
+diff --git a/OvmfPkg/XenBusDxe/EventChannel.c b/OvmfPkg/XenBusDxe/EventChannel.c
+index 810c9bdb7fcc..134d645e09d8 100644
+--- a/OvmfPkg/XenBusDxe/EventChannel.c
++++ b/OvmfPkg/XenBusDxe/EventChannel.c
+@@ -9,23 +9,11 @@
+   SPDX-License-Identifier: BSD-2-Clause-Patent
+ 
+ **/
++
+ #include "EventChannel.h"
+ 
+ #include <Library/XenHypercallLib.h>
+-
+-UINT32
+-XenEventChannelNotify (
+-  IN XENBUS_DEVICE  *Dev,
+-  IN evtchn_port_t  Port
+-  )
+-{
+-  INTN           ReturnCode;
+-  evtchn_send_t  Send;
+-
+-  Send.port  = Port;
+-  ReturnCode = XenHypercallEventChannelOp (EVTCHNOP_send, &Send);
+-  return (UINT32)ReturnCode;
+-}
++#include <Library/XenEventChannelLib.h>
+ 
+ UINT32
+ EFIAPI
+@@ -35,22 +23,7 @@ XenBusEventChannelAllocate (
+   OUT evtchn_port_t    *Port
+   )
+ {
+-  evtchn_alloc_unbound_t  Parameter;
+-  UINT32                  ReturnCode;
+-
+-  Parameter.dom        = DOMID_SELF;
+-  Parameter.remote_dom = DomainId;
+-  ReturnCode           = (UINT32)XenHypercallEventChannelOp (
+-                                   EVTCHNOP_alloc_unbound,
+-                                   &Parameter
+-                                   );
+-  if (ReturnCode != 0) {
+-    DEBUG ((DEBUG_ERROR, "ERROR: alloc_unbound failed with rc=%d", ReturnCode));
+-    return ReturnCode;
+-  }
+-
+-  *Port = Parameter.port;
+-  return ReturnCode;
++  return XenEventChannelAllocate (DomainId, Port);
+ }
+ 
+ UINT32
+@@ -60,10 +33,7 @@ XenBusEventChannelNotify (
+   IN evtchn_port_t    Port
+   )
+ {
+-  XENBUS_PRIVATE_DATA  *Private;
+-
+-  Private = XENBUS_PRIVATE_DATA_FROM_THIS (This);
+-  return XenEventChannelNotify (Private->Dev, Port);
++  return XenEventChannelNotify (Port);
+ }
+ 
+ UINT32
+@@ -73,8 +43,5 @@ XenBusEventChannelClose (
+   IN evtchn_port_t    Port
+   )
+ {
+-  evtchn_close_t  Close;
+-
+-  Close.port = Port;
+-  return (UINT32)XenHypercallEventChannelOp (EVTCHNOP_close, &Close);
++  return XenEventChannelClose (Port);
+ }
+diff --git a/OvmfPkg/XenBusDxe/EventChannel.h b/OvmfPkg/XenBusDxe/EventChannel.h
+index 1e748825dd4a..9c097f3db2c5 100644
+--- a/OvmfPkg/XenBusDxe/EventChannel.h
++++ b/OvmfPkg/XenBusDxe/EventChannel.h
+@@ -14,20 +14,6 @@
+ 
+ #include <IndustryStandard/Xen/event_channel.h>
+ 
+-/**
+-  Send an event to the remote end of the channel whose local endpoint is Port.
+-
+-  @param Dev    A pointer to XENBUS_DEVICE.
+-  @param Port   The port to notify.
+-
+-  @return       Return 0 on success, or return the errno code from the hypercall.
+-**/
+-UINT32
+-XenEventChannelNotify (
+-  IN XENBUS_DEVICE  *Dev,
+-  IN evtchn_port_t  Port
+-  );
+-
+ /*
+  * XenBus protocol
+  */
+diff --git a/OvmfPkg/XenBusDxe/XenBusDxe.inf b/OvmfPkg/XenBusDxe/XenBusDxe.inf
+index 536b49fa8c35..7a068bea09ea 100644
+--- a/OvmfPkg/XenBusDxe/XenBusDxe.inf
++++ b/OvmfPkg/XenBusDxe/XenBusDxe.inf
+@@ -49,6 +49,7 @@
+   DevicePathLib
+   DebugLib
+   XenHypercallLib
++  XenEventChannelLib
+   SynchronizationLib
+   PrintLib
+   PcdLib
+diff --git a/OvmfPkg/XenBusDxe/XenStore.c b/OvmfPkg/XenBusDxe/XenStore.c
+index 0241cfda489b..08e96d5825d7 100644
+--- a/OvmfPkg/XenBusDxe/XenStore.c
++++ b/OvmfPkg/XenBusDxe/XenStore.c
+@@ -46,6 +46,7 @@
+ 
+ #include "EventChannel.h"
+ #include <Library/XenHypercallLib.h>
++#include <Library/XenEventChannelLib.h>
+ 
+ //
+ // Private Data Structures
+@@ -509,7 +510,7 @@ XenStoreWriteStore (
+      * interrupt.
+      */
+     MemoryFence ();
+-    XenEventChannelNotify (xs.Dev, xs.EventChannel);
++    XenEventChannelNotify (xs.EventChannel);
+   }
+ 
+   return XENSTORE_STATUS_SUCCESS;
+@@ -596,7 +597,7 @@ XenStoreReadStore (
+      * delivered.
+      */
+     MemoryFence ();
+-    XenEventChannelNotify (xs.Dev, xs.EventChannel);
++    XenEventChannelNotify (xs.EventChannel);
+   }
+ 
+   return XENSTORE_STATUS_SUCCESS;
+@@ -1177,7 +1178,7 @@ XenStoreDeinit (
+ 
+   if (xs.XenStore->server_features & XENSTORE_SERVER_FEATURE_RECONNECTION) {
+     xs.XenStore->connection = XENSTORE_RECONNECT;
+-    XenEventChannelNotify (xs.Dev, xs.EventChannel);
++    XenEventChannelNotify (xs.EventChannel);
+     while (*(volatile UINT32 *)&xs.XenStore->connection == XENSTORE_RECONNECT) {
+       XenStoreWaitForEvent (xs.EventChannelEvent, EFI_TIMER_PERIOD_MILLISECONDS (100));
+     }
