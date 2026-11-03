@@ -11,11 +11,15 @@
 %define openssllib_path CryptoPkg%2FLibrary%2FOpensslLib%2Fopenssl
 
 # submodule BaseTools/Source/C/BrotliCompress/brotli
-%define brotli_basetools_cset f4153a09f87cbb9c826d8fc12c74642bb2d879ea
+# XCP-ng: Update to Brotli v1.1.1
+#%%define brotli_basetools_cset f4153a09f87cbb9c826d8fc12c74642bb2d879ea
+%define brotli_basetools_cset db0631dfea829194206d269bc7b25d0908cdb97d
 %define brotli_basetools_path BaseTools%2FSource%2FC%2FBrotliCompress%2Fbrotli
 
 # submodule MdeModulePkg/Library/BrotliCustomDecompressLib/brotli
-%define brotli_lib_cset f4153a09f87cbb9c826d8fc12c74642bb2d879ea
+# XCP-ng: Update to Brotli v1.1.1
+#%%define brotli_lib_cset f4153a09f87cbb9c826d8fc12c74642bb2d879ea
+%define brotli_lib_cset db0631dfea829194206d269bc7b25d0908cdb97d
 %define brotli_lib_path MdeModulePkg%2FLibrary%2FBrotliCustomDecompressLib%2Fbrotli
 
 Name: edk2
@@ -28,8 +32,11 @@ URL: https://github.com/tianocore/edk2
 Source0: edk2-20220801.tar.gz
 Source1: calc-pcrs.py
 Source2: openssl-3.0.9.tar.gz
-Source3: brotli-basetools-f4153a09f87cbb9c826d8fc12c74642bb2d879ea.tar.gz
-Source4: brotli-lib-f4153a09f87cbb9c826d8fc12c74642bb2d879ea.tar.gz
+# XCP-ng: Update to Brotli v1.1.1
+# git archive --prefix BaseTools/Source/C/BrotliCompress/brotli/ --format=tar.gz -o brotli-basetools-db0631dfea829194206d269bc7b25d0908cdb97d.tar.gz db0631dfea829194206d269bc7b25d0908cdb97d
+Source3: brotli-basetools-db0631dfea829194206d269bc7b25d0908cdb97d.tar.gz
+# git archive --prefix MdeModulePkg/Library/BrotliCustomDecompressLib/brotli/ --format=tar.gz -o brotli-lib-db0631dfea829194206d269bc7b25d0908cdb97d.tar.gz db0631dfea829194206d269bc7b25d0908cdb97d
+Source4: brotli-lib-db0631dfea829194206d269bc7b25d0908cdb97d.tar.gz
 Patch0: 0001-Avoid-type-errors-in-EAI-related-name-check-logic.patch
 Patch1: 0001-Fix-possible-use-after-free-in-OpenSSL-PKCS7_verify.patch
 Patch2: 0001-tools_def-add-fno-omit-frame-pointer-to-GCC48_-IA32-.patch
@@ -251,6 +258,7 @@ cp OvmfPkg/License.txt License.ovmf
 %changelog
 #* next
 #- Sync with edk2-20220801-1.7.13
+#- Update to Brotli v1.1.1
 #- *** Upstream changelog ***
 #  * Thu Oct 29 2026 Alex Brett <alex.brett@citrix.com> - 20220801-1.7.13
 #  - CA-432843: Fix vulnerabilities
