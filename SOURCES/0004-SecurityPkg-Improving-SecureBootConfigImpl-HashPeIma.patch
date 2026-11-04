@@ -1,4 +1,4 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 025ab811fb2afac6b4036b0fc2fa46d0b04d1c80 Mon Sep 17 00:00:00 2001
 From: Doug Flick <dougflick@microsoft.com>
 Date: Fri, 17 Jan 2025 11:30:17 -0800
 Subject: [PATCH] SecurityPkg: Improving SecureBootConfigImpl:HashPeImageByType
@@ -28,13 +28,15 @@ Namely:
     OID and yield an OID match.
 
 Signed-off-by: Doug Flick <DougFlick@microsoft.com>
-(cherry picked from commit 025ab811fb2afac6b4036b0fc2fa46d0b04d1c80)
+---
+ .../SecureBootConfigImpl.c                    | 37 +++++++++++--------
+ 1 file changed, 21 insertions(+), 16 deletions(-)
 
 diff --git a/SecurityPkg/VariableAuthenticated/SecureBootConfigDxe/SecureBootConfigImpl.c b/SecurityPkg/VariableAuthenticated/SecureBootConfigDxe/SecureBootConfigImpl.c
-index 4299a6b5e56d..fdd194598a68 100644
+index d4dc4e1402..d262904c31 100644
 --- a/SecurityPkg/VariableAuthenticated/SecureBootConfigDxe/SecureBootConfigImpl.c
 +++ b/SecurityPkg/VariableAuthenticated/SecureBootConfigDxe/SecureBootConfigImpl.c
-@@ -2079,30 +2079,35 @@ HashPeImageByType (
+@@ -2105,30 +2105,35 @@ HashPeImageByType (
  {
    UINT8                     Index;
    WIN_CERTIFICATE_EFI_PKCS  *PkcsCertData;
@@ -86,3 +88,6 @@ index 4299a6b5e56d..fdd194598a68 100644
      if (CompareMem (PkcsCertData->CertData + 32, mHash[Index].OidValue, mHash[Index].OidLength) == 0) {
        break;
      }
+-- 
+2.53.0
+
