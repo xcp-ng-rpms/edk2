@@ -1,0 +1,87 @@
+From aedcaa3df8a246ef859c234ed5c243471c5be698 Mon Sep 17 00:00:00 2001
+From: "INDIA\\sachinganesh" <sachinganesh@ami.com>
+Date: Mon, 13 Jan 2025 16:15:54 +0530
+Subject: [PATCH] MdePkg: Fix overflow issue in
+ PeCoffLoaderRelocateImageForRuntime
+
+RelocDir->Size is a UINT32 value, and RelocDir->VirtualAddress is
+also a UINT32 value. The current code in
+PeCoffLoaderRelocateImageForRuntime does not check for overflow when
+adding RelocDir->Size to RelocDir->VirtualAddress. This patch uses
+SafeIntLib to ensure that the addition does not overflow.
+
+Signed-off-by: Sachin Ganesh <sachinganesh@ami.com>
+---
+ MdePkg/Library/BasePeCoffLib/BasePeCoff.c     | 25 ++++++++++---------
+ .../Library/BasePeCoffLib/BasePeCoffLib.inf   |  1 +
+ 2 files changed, 14 insertions(+), 12 deletions(-)
+
+diff --git a/MdePkg/Library/BasePeCoffLib/BasePeCoff.c b/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
+index fab7ab3b4c..e45980d529 100644
+--- a/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
++++ b/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
+@@ -24,6 +24,7 @@
+ **/
+ 
+ #include "BasePeCoffLibInternals.h"
++#include <Library/SafeIntLib.h>
+ 
+ /**
+   Adjust some fields in section header for TE image.
+@@ -1767,6 +1768,7 @@ PeCoffLoaderRelocateImageForRuntime (
+   UINTN                                Adjust;
+   RETURN_STATUS                        Status;
+   PE_COFF_LOADER_IMAGE_CONTEXT         ImageContext;
++  UINT32                               EndAddress;
+ 
+   if ((RelocationData == NULL) || (ImageBase == 0x0) || (VirtImageBase == 0x0)) {
+     return;
+@@ -1828,24 +1830,23 @@ PeCoffLoaderRelocateImageForRuntime (
+   if (NumberOfRvaAndSizes > EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC) {
+     RelocDir = DataDirectory + EFI_IMAGE_DIRECTORY_ENTRY_BASERELOC;
+     if ((RelocDir != NULL) && (RelocDir->Size > 0)) {
+-      RelocBase    = (EFI_IMAGE_BASE_RELOCATION *)PeCoffLoaderImageAddress (&ImageContext, RelocDir->VirtualAddress, 0);
+-      RelocBaseEnd = (EFI_IMAGE_BASE_RELOCATION *)PeCoffLoaderImageAddress (
+-                                                    &ImageContext,
+-                                                    RelocDir->VirtualAddress + RelocDir->Size - 1,
+-                                                    0
+-                                                    );
++      Status = SafeUint32Add (RelocDir->VirtualAddress, (RelocDir->Size - 1), &EndAddress);
++      if (!RETURN_ERROR (Status)) {
++        RelocBase    = (EFI_IMAGE_BASE_RELOCATION *)PeCoffLoaderImageAddress (&ImageContext, RelocDir->VirtualAddress, 0);
++        RelocBaseEnd = (EFI_IMAGE_BASE_RELOCATION *)PeCoffLoaderImageAddress (
++                                                      &ImageContext,
++                                                      EndAddress,
++                                                      0
++                                                      );
++      }
+     }
+ 
+     if ((RelocBase == NULL) || (RelocBaseEnd == NULL) || ((UINTN)RelocBaseEnd < (UINTN)RelocBase)) {
+-      //
+-      // relocation block is not valid, just return
+-      //
++      DEBUG ((DEBUG_ERROR, "Relocation block is not valid\n"));
+       return;
+     }
+   } else {
+-    //
+-    // Cannot find relocations, cannot continue to relocate the image, ASSERT for this invalid image.
+-    //
++    DEBUG ((DEBUG_ERROR, "Cannot find relocations, cannot continue to relocate the image\n"));
+     ASSERT (FALSE);
+     return;
+   }
+diff --git a/MdePkg/Library/BasePeCoffLib/BasePeCoffLib.inf b/MdePkg/Library/BasePeCoffLib/BasePeCoffLib.inf
+index 3b8b8eb191..6bab9e7acd 100644
+--- a/MdePkg/Library/BasePeCoffLib/BasePeCoffLib.inf
++++ b/MdePkg/Library/BasePeCoffLib/BasePeCoffLib.inf
+@@ -58,4 +58,5 @@
+   DebugLib
+   PeCoffExtraActionLib
+   BaseMemoryLib
++  SafeIntLib
+ 
+-- 
+2.53.0
+

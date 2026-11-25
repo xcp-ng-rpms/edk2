@@ -1,0 +1,56 @@
+From 6278bbb89822c598fcd0637ae74174e367895c84 Mon Sep 17 00:00:00 2001
+From: "INDIA\\sachinganesh" <sachinganesh@ami.com>
+Date: Thu, 23 Jan 2025 18:35:35 +0530
+Subject: [PATCH] MdePkg: Use SafeIntLib to handle overflow
+
+Used SafeIntLib to handle the overflow check in
+PeCoffLoaderRelocateImage
+
+Signed-off-by: Sachin Ganesh <sachinganesh@ami.com>
+---
+ MdePkg/Library/BasePeCoffLib/BasePeCoff.c | 20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/MdePkg/Library/BasePeCoffLib/BasePeCoff.c b/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
+index e45980d529..ccb963407e 100644
+--- a/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
++++ b/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
+@@ -976,6 +976,7 @@ PeCoffLoaderRelocateImage (
+   PHYSICAL_ADDRESS                     BaseAddress;
+   UINT32                               NumberOfRvaAndSizes;
+   UINT32                               TeStrippedOffset;
++  UINT32                               EndAddress;
+ 
+   ASSERT (ImageContext != NULL);
+ 
+@@ -1055,15 +1056,20 @@ PeCoffLoaderRelocateImage (
+     RelocDir = &Hdr.Te->DataDirectory[0];
+   }
+ 
+-  if ((RelocDir != NULL) && (RelocDir->Size > 0) && ((RelocDir->Size - 1) < (MAX_UINT32 - RelocDir->VirtualAddress))) {
+-    RelocBase    = (EFI_IMAGE_BASE_RELOCATION *)PeCoffLoaderImageAddress (ImageContext, RelocDir->VirtualAddress, TeStrippedOffset);
+-    RelocBaseEnd = (EFI_IMAGE_BASE_RELOCATION *)PeCoffLoaderImageAddress (
+-                                                  ImageContext,
+-                                                  RelocDir->VirtualAddress + RelocDir->Size - 1,
+-                                                  TeStrippedOffset
+-                                                  );
++  if ((RelocDir != NULL) && (RelocDir->Size > 0)) {
++    Status = SafeUint32Add (RelocDir->VirtualAddress, (RelocDir->Size - 1), &EndAddress);
++    if (!RETURN_ERROR (Status)) {
++      RelocBase    = (EFI_IMAGE_BASE_RELOCATION *)PeCoffLoaderImageAddress (ImageContext, RelocDir->VirtualAddress, TeStrippedOffset);
++      RelocBaseEnd = (EFI_IMAGE_BASE_RELOCATION *)PeCoffLoaderImageAddress (
++                                                    ImageContext,
++                                                    EndAddress,
++                                                    TeStrippedOffset
++                                                    );
++    }
++
+     if ((RelocBase == NULL) || (RelocBaseEnd == NULL) || ((UINTN)RelocBaseEnd < (UINTN)RelocBase)) {
+       ImageContext->ImageError = IMAGE_ERROR_FAILED_RELOCATION;
++      DEBUG ((DEBUG_ERROR, "Relocation block is not valid\n"));
+       return RETURN_LOAD_ERROR;
+     }
+   } else {
+-- 
+2.53.0
+

@@ -1,0 +1,45 @@
+From 3600675368581ba4987f5656c2783bab62750ee7 Mon Sep 17 00:00:00 2001
+From: Ard Biesheuvel <ardb@kernel.org>
+Date: Wed, 29 Jan 2025 00:09:20 +0100
+Subject: [PATCH] MdePkg/BasePeCoffLib: Remove DEBUG() statements from runtime
+ code
+
+PeCoffLoaderRelocateImageForRuntime() executes after boot services, and
+so it should not use DEBUG() prints at all, given that these may rely on
+MMIO mappings or other boot time facilities that are no longer
+available.
+
+So revert the changes in aedcaa3df8a2 ("MdePkg: Fix overflow issue in
+PeCoffLoaderRelocateImageForRuntime") that replaced code comments with
+DBEUG() statements.
+
+Signed-off-by: Ard Biesheuvel <ardb@kernel.org>
+---
+ MdePkg/Library/BasePeCoffLib/BasePeCoff.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/MdePkg/Library/BasePeCoffLib/BasePeCoff.c b/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
+index 92285dfd05..f853c84827 100644
+--- a/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
++++ b/MdePkg/Library/BasePeCoffLib/BasePeCoff.c
+@@ -1845,11 +1845,15 @@ PeCoffLoaderRelocateImageForRuntime (
+     }
+ 
+     if ((RelocBase == NULL) || (RelocBaseEnd == NULL) || ((UINTN)RelocBaseEnd < (UINTN)RelocBase)) {
+-      DEBUG ((DEBUG_ERROR, "Relocation block is not valid\n"));
++      //
++      // relocation block is not valid, just return
++      //
+       return;
+     }
+   } else {
+-    DEBUG ((DEBUG_ERROR, "Cannot find relocations, cannot continue to relocate the image\n"));
++    //
++    // Cannot find relocations, cannot continue to relocate the image, ASSERT for this invalid image.
++    //
+     ASSERT (FALSE);
+     return;
+   }
+-- 
+2.53.0
+

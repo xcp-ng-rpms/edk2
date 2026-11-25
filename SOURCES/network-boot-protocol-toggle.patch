@@ -1,0 +1,128 @@
+CP-314149: Read XenStore to disable PXE DHCP boot protocols
+
+Allow OVMF to read dhcp/allow-ipv[46] XenStore paths to determine if we
+should enable/disable acquiring network addresses via those protocols
+using DHCP.
+The protocols are only disabled if XenStore can be accessed, the path
+exists, can be read from successfully and contains the string 'false'
+exactly.
+diff --git a/OvmfPkg/Library/XenBootOrderLib/XenBootOrderLib.c b/OvmfPkg/Library/XenBootOrderLib/XenBootOrderLib.c
+index 777a119b90b0..bb973545f21f 100644
+--- a/OvmfPkg/Library/XenBootOrderLib/XenBootOrderLib.c
++++ b/OvmfPkg/Library/XenBootOrderLib/XenBootOrderLib.c
+@@ -19,6 +19,7 @@
+ #include <Library/UefiRuntimeServicesTableLib.h>
+ #include <Library/BaseLib.h>
+ #include <Library/XenBootOrderLib.h>
++#include <Library/XenStoreLib.h>
+ #include <Guid/GlobalVariable.h>
+ #include <Protocol/XenBus.h>
+ #include <Library/IoLib.h>
+@@ -28,13 +29,62 @@ enum boottype {
+   floppy, /* unused */
+   hd,
+   cdr,
+-  nic,
++  nic,  /* Any network boot protocol */
++  nic4,
++  nic6,
+   /* After a device is copied to the boot order list - mark it as 'done' */
+   done
+ };
+ 
+ #define MAX_CMOS_BOOT_SLOT 4
+ 
++/**
++  Check XenStore if a protocol is enabled for network boot.
++
++  Returns false only when an entry can be read and matches 'false'.
++ */
++STATIC
++BOOLEAN
++NetworkProtocolEnabled (
++  CHAR8 *ProtocolNode
++  )
++{
++  XENSTORE_STATUS Status;
++  CHAR8 *Value = NULL;
++
++  Status = XenStoreRead (XST_NIL,
++                         "dhcp",
++                         ProtocolNode,
++                         NULL,
++                         (VOID **) &Value);
++
++  if (Status == XENSTORE_STATUS_SUCCESS) {
++    DEBUG ((DEBUG_INFO, "XenStoreRead dhcp/%s yields %s.\n", ProtocolNode, Value));
++    return AsciiStrCmp(Value, "false") != 0;
++  }
++
++  DEBUG ((DEBUG_INFO, "XenStoreRead dhcp/%s failed.\n", ProtocolNode));
++  return TRUE;
++}
++
++STATIC
++BOOLEAN
++IPv4DHCPEnabled (
++  VOID
++  )
++{
++  return NetworkProtocolEnabled ("allow-ipv4");
++}
++
++STATIC
++BOOLEAN
++IPv6DHCPEnabled (
++  VOID
++  )
++{
++  return NetworkProtocolEnabled ("allow-ipv6");
++}
++
+ /**
+   Return the boottype for a device path.
+ 
+@@ -113,8 +163,10 @@ GetBootTypeFromDevicePath (
+         case MSG_MAC_ADDR_DP:
+         case MSG_VLAN_DP:
+         case MSG_IPv4_DP:
++          return nic4;
++
+         case MSG_IPv6_DP:
+-          return nic;
++          return nic6;
+ 
+         default:
+           // Misc boot type
+@@ -184,7 +236,6 @@ CmosReadBoot (
+   IoWrite8 (0x70, 0x38);
+   Data = IoRead8 (0x71);
+ 
+-  /* The logical third slot can only be floppy disk - which is not used. */
+   Boot[2] = (Data >> 4) & 0xf;
+   Boot[3] = unknown;
+ }
+@@ -242,7 +293,10 @@ SetBootOrderFromXen (
+ 
+   for (CmosSlot = 0; CmosSlot < MAX_CMOS_BOOT_SLOT; CmosSlot++) {
+     for (BootDev = 0; BootDev < BootOptionCount; BootDev++) {
+-      if (BootList[BootDev] == CmosBoot[CmosSlot]) {
++      if (BootList[BootDev] == CmosBoot[CmosSlot] ||
++          (CmosBoot[CmosSlot] == nic && 
++           ((BootList[BootDev] == nic4 && IPv4DHCPEnabled ()) ||
++            (BootList[BootDev] == nic6 && IPv6DHCPEnabled ())))) {
+         BootList[BootDev] = done;
+         BootOrder[BootListIndex++] = BootOptions[BootDev].OptionNumber;
+       }
+diff --git a/OvmfPkg/Library/XenBootOrderLib/XenBootOrderLib.inf b/OvmfPkg/Library/XenBootOrderLib/XenBootOrderLib.inf
+index 43bd5380143d..fc423f1a83a6 100644
+--- a/OvmfPkg/Library/XenBootOrderLib/XenBootOrderLib.inf
++++ b/OvmfPkg/Library/XenBootOrderLib/XenBootOrderLib.inf
+@@ -49,6 +49,7 @@
+   PrintLib
+   DevicePathLib
+   BaseMemoryLib
++  XenStoreLib
+ 
+ [Guids]
+   gEfiGlobalVariableGuid
